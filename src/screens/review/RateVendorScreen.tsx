@@ -5,7 +5,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable as RNPressable } from 'react-native';
 import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, Chip, Icon } from '@ui';
 import { colors } from '@theme';
-import { Stars, revs } from './shared';
+import { revs } from './shared';
 import { vendorsApi } from '../../api';
 import type { VendorProfile } from '../../api';
 import type { RootStackParamList } from '@navigation/types';

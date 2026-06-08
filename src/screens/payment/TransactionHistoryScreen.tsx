@@ -1,6 +1,5 @@
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Screen, ScreenBody, Topbar, Card, Row, RowBetween, Txt, Chip, IconBox, HeroGradient } from '@ui';
 import { colors } from '@theme';
 import { IconBtnBox, pps } from './shared';
@@ -25,7 +24,6 @@ function statusLabel(s: string): string {
 
 /* 8.8 Transaction History */
 export const TransactionHistoryScreen: React.FC = () => {
-  const nav = useNavigation<any>();
   const [payments, setPayments] = React.useState<Payment[]>([]);
   const [loading, setLoading] = React.useState(true);
 

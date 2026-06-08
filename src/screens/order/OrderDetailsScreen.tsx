@@ -1,11 +1,12 @@
 import React from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, ImgPh, Divider, HeroGradient } from '@ui';
+import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, ImgPh, Divider, HeroGradient, Icon, IconBox } from '@ui';
 import { colors } from '@theme';
 import { IconBtnBox, os } from './shared';
-import { ordersApi } from '../../api';
+import { ordersApi, chatApi, ApiError } from '../../api';
 import type { Order } from '../../api';
 import type { RootStackParamList } from '@navigation/types';
 
@@ -28,9 +29,12 @@ function initials(name: string): string {
 /* 7.2 Order Details */
 export const OrderDetailsScreen: React.FC<Props> = ({ route }) => {
   const nav = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const orderId = route.params?.orderId;
   const [order, setOrder] = React.useState<Order | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [chatOpening, setChatOpening] = React.useState(false);
 
   React.useEffect(() => {
     if (!orderId) return;
@@ -62,12 +66,57 @@ export const OrderDetailsScreen: React.FC<Props> = ({ route }) => {
   const canPay = order.payment_status === 'pending' || order.payment_status === 'partially_paid';
   const totalPaid = (order.payments ?? []).filter(p => p.status === 'success').reduce((s, p) => s + p.amount, 0);
   const balanceDue = order.total - totalPaid;
-  const vendorName = order.vendor?.company_name ?? 'Vendor';
+  const vendorName = order.vendor?.company_name || order.vendor?.user?.name || 'Vendor';
   const vendorInitials = initials(vendorName);
+
+  const openChat = async () => {
+    setMenuOpen(false);
+    if (chatOpening) return;
+    const counterpartyId = order.vendor?.user?.id ?? order.vendor?.user_id ?? order.vendor?.id;
+    if (!counterpartyId) {
+      Alert.alert('Chat unavailable', 'This vendor can’t be messaged right now.');
+      return;
+    }
+    setChatOpening(true);
+    try {
+      const room = await chatApi.openRoom({ counterparty_user_id: counterpartyId, order_id: order.id });
+      nav.navigate('ChatThread', { threadId: String(room.id), vendorName });
+    } catch (err) {
+      Alert.alert('Could not open chat', err instanceof ApiError ? err.message : 'Please try again.');
+    } finally {
+      setChatOpening(false);
+    }
+  };
+
+  const onShare = async () => {
+    setMenuOpen(false);
+    try {
+      await Share.share({ message: `Order #${order.reference} with ${vendorName} — on PORTDA` });
+    } catch {/* dismissed */}
+  };
+
+  const go = (screen: string) => { setMenuOpen(false); nav.navigate(screen, { orderId: String(order.id) }); };
+
+  const canReschedule = ['placed', 'confirmed', 'in_progress'].includes(order.status);
+  const menuItems: { icon: any; label: string; danger?: boolean; fn: () => void }[] = [
+    { icon: 'message-circle', label: 'Chat with vendor', fn: openChat },
+    ...(canReschedule ? [{ icon: 'clock', label: 'Reschedule', fn: () => go('Reschedule') }] : []),
+    { icon: 'tray', label: 'Share order', fn: onShare },
+    { icon: 'help-circle', label: 'Contact support', fn: () => { setMenuOpen(false); nav.navigate('ContactSupport'); } },
+    ...(canCancel ? [{ icon: 'close', label: 'Cancel order', danger: true, fn: () => go('CancelOrder') }] : []),
+  ];
 
   return (
     <Screen>
-      <Topbar title="Order Details" onBack={() => nav.goBack()} right={<IconBtnBox name="more-vertical" />} />
+      <Topbar
+        title="Order Details"
+        onBack={() => nav.goBack()}
+        right={
+          <Pressable onPress={() => setMenuOpen(true)} hitSlop={8} disabled={chatOpening}>
+            <IconBtnBox name="more-vertical" />
+          </Pressable>
+        }
+      />
       <ScreenBody>
         <HeroGradient style={os.heroCard}>
           <RowBetween>
@@ -158,7 +207,7 @@ export const OrderDetailsScreen: React.FC<Props> = ({ route }) => {
       <BottomCta>
         <Row gap={8} style={{ marginBottom: 8 }}>
           {canCancel ? (
-            <Btn title="Cancel Order" variant="ghost" style={{ flex: 1 }} sm onPress={() => nav.navigate('CancelOrder', { orderId: String(order.id) })} />
+            <Btn title="Cancel Order" variant="ghost" style={{ flex: 1, borderWidth: 1.5, borderColor: colors.border }} sm onPress={() => nav.navigate('CancelOrder', { orderId: String(order.id) })} />
           ) : null}
           <Btn title="Track Live" variant="outline" style={{ flex: 1 }} sm onPress={() => nav.navigate('InProgress', { orderId: String(order.id) })} />
         </Row>
@@ -168,6 +217,33 @@ export const OrderDetailsScreen: React.FC<Props> = ({ route }) => {
           <Btn title="View Status Timeline" onPress={() => nav.navigate('OrderStatus', { orderId: String(order.id) })} />
         )}
       </BottomCta>
+
+      {/* Options menu */}
+      <Modal visible={menuOpen} transparent animationType="slide" statusBarTranslucent onRequestClose={() => setMenuOpen(false)}>
+        <Pressable style={ms.backdrop} onPress={() => setMenuOpen(false)}>
+          <Pressable style={ms.sheet} onPress={() => {}}>
+            <View style={ms.handle} />
+            <Txt size="md" weight="bold" style={{ marginBottom: 6 }}>Order options</Txt>
+            {menuItems.map((m, i) => (
+              <Pressable key={m.label} style={[ms.row, i > 0 && ms.rowBorder]} onPress={m.fn}>
+                <IconBox size={36} rounded={10} bg={m.danger ? colors.dangerLight : colors.bg}>
+                  <Icon name={m.icon} size={18} color={m.danger ? colors.danger : colors.text} />
+                </IconBox>
+                <Txt size="sm" weight="semi" color={m.danger ? colors.danger : colors.text}>{m.label}</Txt>
+              </Pressable>
+            ))}
+            <View style={{ height: insets.bottom + 4 }} />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 };
+
+const ms = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(10,25,41,0.5)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 },
+  handle: { alignSelf: 'center', width: 44, height: 5, borderRadius: 3, backgroundColor: colors.border, marginBottom: 14 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  rowBorder: { borderTopWidth: 1, borderTopColor: colors.border2 },
+});

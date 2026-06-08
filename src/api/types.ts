@@ -5,6 +5,8 @@ export interface User {
   phone: string | null;
   role: 'buyer' | 'vendor';
   avatar: string | null;
+  /** Absolute, ready-to-render avatar URL (api-user.md §4) — prefer over building it. */
+  avatar_url?: string | null;
   buyer_profile?: BuyerProfile;
   active_subscription?: Subscription | null;
 }
@@ -193,11 +195,15 @@ export interface ChatRoom {
 
 export interface ChatMessage {
   id: number;
-  room_id: number;
+  // The send response uses `chat_room_id`; list/room responses may use `room_id`.
+  room_id?: number;
+  chat_room_id?: number;
   sender_id: number;
   type: 'text' | 'image' | 'file';
   body: string | null;
-  attachment_url: string | null;
+  // Attachments come back as a full `attachment_url` or a storage `attachment_path`.
+  attachment_url?: string | null;
+  attachment_path?: string | null;
   created_at: string;
   read_at: string | null;
 }

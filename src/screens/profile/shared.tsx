@@ -4,14 +4,22 @@ import { Card, Txt, IconBox, Icon } from '@ui';
 import { colors, fontSize, radius } from '@theme';
 import { BASE_URL } from '../../api';
 
-// Avatars may come back as a full URL (from POST /profile/avatar) or a relative
-// storage path (from GET /profile|/auth/me). Normalize to an absolute URL.
-const MEDIA_ORIGIN = BASE_URL.replace(/\/api\/?$/, '');
+// Fallback resolver for relative media paths ("avatars/…", "chat/…"). Prefer the
+// server's absolute URL (`avatar_url`, or a message's `attachment_url`) when present.
+// New uploads are served under /cloud (api-user.md §4); we also tolerate /storage.
+const MEDIA_ORIGIN = BASE_URL.replace(/\/api\/?$/, ''); // https://portda.in
 export function avatarUrl(path?: string | null): string | undefined {
   if (!path) return undefined;
-  if (/^https?:\/\//i.test(path)) return path;
-  return `${MEDIA_ORIGIN}/${path.replace(/^\/+/, '')}`;
+  if (/^https?:\/\//i.test(path)) return path;       // already absolute
+  const clean = path.replace(/^\/+/, '');            // strip leading slashes
+  // Respect an already-rooted path; otherwise serve from the /cloud upload root.
+  return /^(cloud|storage)\//.test(clean)
+    ? `${MEDIA_ORIGIN}/${clean}`
+    : `${MEDIA_ORIGIN}/cloud/${clean}`;
 }
+
+/** Resolve any server media path/URL (avatars, chat attachments) to absolute. */
+export const mediaUrl = avatarUrl;
 
 export const IconBtnBox: React.FC<{ name: any }> = ({ name }) => (
   <View style={pfs.iconBtn}><Icon name={name} size={18} color={colors.text} /></View>

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Text,
   TextStyle,
-  View,
   ViewStyle,
 } from 'react-native';
 import { colors, font, fontSize, radius, shadow } from '@theme';

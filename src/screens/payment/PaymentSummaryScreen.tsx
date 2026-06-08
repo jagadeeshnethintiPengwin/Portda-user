@@ -3,7 +3,7 @@ import { ActivityIndicator, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, ImgPh, Divider, HeroGradient } from '@ui';
-import { colors, fontSize } from '@theme';
+import { colors } from '@theme';
 import { pps } from './shared';
 import { ordersApi } from '../../api';
 import type { Order } from '../../api';

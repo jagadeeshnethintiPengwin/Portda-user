@@ -2,7 +2,7 @@ import React from 'react';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, Chip, IconBox, ImgPh, Tabs, HeroGradient } from '@ui';
+import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, Chip, ImgPh, Tabs, HeroGradient } from '@ui';
 import { colors } from '@theme';
 import { qs } from './shared';
 import { quotationsApi, ApiError } from '../../api';
@@ -83,12 +83,23 @@ export const ApproveQuotationScreen: React.FC<Props> = ({ route }) => {
     );
   }
 
-  const amount = quotation?.amount ?? 0;
+  if (!quotation) {
+    return (
+      <Screen>
+        <Topbar title="Approve Quotation" onBack={() => nav.goBack()} />
+        <Txt size="md" color={colors.text2} center style={{ marginTop: 40 }}>Quotation not found.</Txt>
+      </Screen>
+    );
+  }
+
+  // amount/rating can arrive as strings ("185000", "4.90") — coerce so math + format work.
+  const amount = Number(quotation.amount) || 0;
   const advance = Math.round(amount * 0.2);
   const balance = amount - advance;
-  const vendorName = quotation?.vendor?.company_name ?? 'Vendor';
+  const vendorName = quotation.vendor?.company_name || quotation.vendor?.user?.name || 'Vendor';
   const vendorInitials = initials(vendorName);
-  const vendorRating = quotation?.vendor?.rating?.toFixed(1) ?? '—';
+  const ratingNum = quotation.vendor?.rating != null && !isNaN(Number(quotation.vendor.rating)) ? Number(quotation.vendor.rating) : null;
+  const vendorRating = ratingNum !== null ? ratingNum.toFixed(1) : '—';
 
   return (
     <Screen>

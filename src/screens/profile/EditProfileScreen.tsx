@@ -46,7 +46,7 @@ export const EditProfileScreen: React.FC = () => {
   const [portQuery, setPortQuery] = React.useState('');
   const [saving, setSaving] = React.useState(false);
 
-  const [avatarUri, setAvatarUri] = React.useState<string | null>(avatarUrl(user?.avatar) ?? null);
+  const [avatarUri, setAvatarUri] = React.useState<string | null>(user?.avatar_url ?? avatarUrl(user?.avatar) ?? null);
   const [avatarFailed, setAvatarFailed] = React.useState(false);
   const [photoSheet, setPhotoSheet] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
@@ -75,9 +75,9 @@ export const EditProfileScreen: React.FC = () => {
   // Upload the picked image to POST /profile/avatar and reflect it everywhere.
   const uploadPicked = async (a: Asset) => {
     if (!a.uri) return;
-    // Server caps avatars at 2 MB — bail early with a clear message if still over.
-    if (a.fileSize && a.fileSize > 2 * 1024 * 1024) {
-      Alert.alert('Image too large', 'Please pick an image under 2 MB.');
+    // Server caps avatars at 5 MB (api-user.md §15) — bail early if still over.
+    if (a.fileSize && a.fileSize > 5 * 1024 * 1024) {
+      Alert.alert('Image too large', 'Please pick an image under 5 MB.');
       return;
     }
     const prev = avatarUri;
@@ -91,10 +91,9 @@ export const EditProfileScreen: React.FC = () => {
         a.fileName ?? `avatar.${(a.type?.split('/')[1]) ?? 'jpg'}`,
         a.type ?? 'image/jpeg',
       );
-      const newAvatar = res.url || res.avatar;
-      if (user) updateUser({ ...user, avatar: newAvatar });
-      // Keep showing the LOCAL image we just picked — it always renders.
-      // (The canonical remote URL is saved on the user for later loads.)
+      // Save the relative path + the server's absolute URL; keep the user object intact.
+      if (user) updateUser({ ...user, avatar: res.avatar ?? res.path ?? null, avatar_url: res.url });
+      // Keep showing the LOCAL image we just picked — it always renders this session.
       setAvatarUri(a.uri);
     } catch (err) {
       setAvatarUri(prev ?? avatarUrl(user?.avatar) ?? null); // roll back the preview

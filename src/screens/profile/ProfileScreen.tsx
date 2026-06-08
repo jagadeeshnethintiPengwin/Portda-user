@@ -1,16 +1,12 @@
 import React from 'react';
-import { ActivityIndicator, Image, Pressable, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, ScreenBody, Topbar, Txt, Chip, Icon, HeroGradient } from '@ui';
 import { colors } from '@theme';
-import { IconBtnBox, ListGroup, pfs, avatarUrl } from './shared';
+import { IconBtnBox, ListGroup, pfs } from './shared';
+import { AvatarPicker } from '../../components/AvatarPicker';
 import { useAuth } from '../../context/AuthContext';
 import { authApi, profileApi } from '../../api';
-
-function initials(name?: string | null): string {
-  if (!name || typeof name !== 'string') return '??';
-  return name.trim().split(' ').filter(Boolean).slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase() || '??';
-}
 
 /* 11.1 Company Profile */
 export const ProfileScreen: React.FC = () => {
@@ -18,18 +14,12 @@ export const ProfileScreen: React.FC = () => {
   const { user, isLoading, updateUser } = useAuth();
   const [meLoading, setMeLoading] = React.useState(false);
   const [kyc, setKyc] = React.useState<{ pending: number; approved: number } | null>(null);
-  const [avatarFailed, setAvatarFailed] = React.useState(false);
-
-  const avatar = avatarUrl(user?.avatar);
 
   React.useEffect(() => {
     setMeLoading(true);
     authApi.me().then(updateUser).catch(() => {}).finally(() => setMeLoading(false));
     profileApi.kycStatus().then(s => setKyc(s.counts)).catch(() => {});
   }, [updateUser]);
-
-  // Fall back to initials if the avatar URL fails to load (never show blank).
-  React.useEffect(() => { setAvatarFailed(false); }, [avatar]);
 
   const kycChip = kyc
     ? kyc.approved > 0
@@ -51,7 +41,6 @@ export const ProfileScreen: React.FC = () => {
   const displayName = user?.name ?? 'User';
   const companyName = user?.buyer_profile?.company_name ?? '';
   const email = user?.email ?? '';
-  const userInitials = initials(displayName);
 
   return (
     <Screen>
@@ -66,16 +55,11 @@ export const ProfileScreen: React.FC = () => {
       />
       <ScreenBody>
         <HeroGradient style={pfs.heroCard}>
-          <View style={pfs.editBtn}>
+          <Pressable style={pfs.editBtn} onPress={() => nav.navigate('EditProfile')} hitSlop={8}>
             <Icon name="edit" size={16} color="#fff" />
-          </View>
-          <View style={pfs.profileAvatar}>
-            {avatar && !avatarFailed ? (
-              <Image source={{ uri: avatar }} style={pfs.profileAvatarImg} onError={() => setAvatarFailed(true)} />
-            ) : (
-              <Txt size="xl" weight="bold" color="#fff">{userInitials}</Txt>
-            )}
-          </View>
+          </Pressable>
+          {/* Display-only here — editing the photo happens in Edit Profile. */}
+          <AvatarPicker size={64} variant="dark" editable={false} />
           <Txt size="lg" weight="bold" color="#fff" style={{ marginTop: 12 }}>{displayName}</Txt>
           {companyName ? <Txt style={pfs.heroSub}>{companyName}</Txt> : null}
           <Txt style={pfs.heroSub}>{email}</Txt>

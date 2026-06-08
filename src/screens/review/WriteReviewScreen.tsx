@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, ImgPh, TextField } from '@ui';
 import { colors, fontSize } from '@theme';
-import { Stars, CheckBox, revs } from './shared';
+import { Stars, CheckBox } from './shared';
 import { reviewsApi, ApiError } from '../../api';
 import type { RootStackParamList } from '@navigation/types';
 
@@ -15,7 +15,7 @@ const TAGS = ['Punctual', 'Professional', 'Clear communication', 'Fair pricing',
 /* 9.2 Write Review */
 export const WriteReviewScreen: React.FC<Props> = ({ route }) => {
   const nav = useNavigation<any>();
-  const { vendorId, orderId, rating } = route.params;
+  const { orderId, rating } = route.params;
   const [title, setTitle] = React.useState('');
   const [body, setBody] = React.useState('');
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);

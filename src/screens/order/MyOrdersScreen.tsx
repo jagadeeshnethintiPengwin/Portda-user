@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
@@ -8,7 +8,7 @@ import {
 } from '@ui';
 import { colors } from '@theme';
 import { AVATAR_TONE, os } from './shared';
-import { ordersApi } from '../../api';
+import { ordersApi, chatApi, ApiError } from '../../api';
 import type { Order } from '../../api';
 
 const STATUS_VARIANT: Record<string, 'primary' | 'success' | 'warning' | 'accent'> = {
@@ -33,6 +33,7 @@ export const MyOrdersScreen: React.FC = () => {
   const [orders, setOrders] = React.useState<Order[]>([]);
   const [query, setQuery] = React.useState('');
   const [loading, setLoading] = React.useState(true);
+  const [chatOpeningId, setChatOpeningId] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     ordersApi.list()
@@ -40,6 +41,26 @@ export const MyOrdersScreen: React.FC = () => {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  // Open (or fetch) the 1:1 room with this order's vendor, then go to the thread.
+  const openChat = async (o: Order) => {
+    if (chatOpeningId) return;
+    // Server resolves user id OR vendor-profile id (api-user.md §12).
+    const counterpartyId = o.vendor?.user?.id ?? o.vendor?.user_id ?? o.vendor?.id;
+    if (!counterpartyId) {
+      Alert.alert('Chat unavailable', 'This vendor can’t be messaged right now.');
+      return;
+    }
+    setChatOpeningId(o.id);
+    try {
+      const room = await chatApi.openRoom({ counterparty_user_id: counterpartyId, order_id: o.id });
+      nav.navigate('ChatThread', { threadId: String(room.id), vendorName: o.vendor?.company_name ?? 'Vendor' });
+    } catch (err) {
+      Alert.alert('Could not open chat', err instanceof ApiError ? err.message : 'Please try again.');
+    } finally {
+      setChatOpeningId(null);
+    }
+  };
 
   // Client-side search — the orders endpoint has no `q` filter (api-user.md §9),
   // and a buyer's order list is small, so we filter what we've loaded.
@@ -92,12 +113,18 @@ export const MyOrdersScreen: React.FC = () => {
         ) : (
           filtered.map((o, idx) => {
             const tone = TONE_KEYS[idx % TONE_KEYS.length];
-            const vendorName = o.vendor?.company_name ?? 'Vendor';
+            // Resolve the vendor name across the shapes the API may return (|| skips empty strings).
+            const vendorName =
+              o.vendor?.company_name ||
+              o.vendor?.user?.name ||
+              o.quotation?.vendor?.company_name ||
+              'Vendor';
             const vendorInitials = initials(vendorName);
             const canAct = o.status === 'placed' || o.status === 'confirmed';
 
             return (
-              <Card key={o.id} style={{ marginBottom: 10 }} onTouchEnd={() => nav.navigate('OrderDetails', { orderId: String(o.id) })}>
+              <Pressable key={o.id} style={{ marginBottom: 10 }} onPress={() => nav.navigate('OrderDetails', { orderId: String(o.id) })}>
+              <Card>
                 <RowBetween>
                   <Txt size="xs" color={colors.text2}>
                     #{o.reference} · {o.service_request?.vessel_name ?? '—'}
@@ -116,18 +143,19 @@ export const MyOrdersScreen: React.FC = () => {
                       {o.scheduled_at ? new Date(o.scheduled_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                     </Txt>
                     <Txt size="md" weight="bold" color={colors.primary} style={{ marginTop: 4 }}>
-                      ₹{o.total.toLocaleString('en-IN')}
+                      ₹{Number(o.total).toLocaleString('en-IN')}
                     </Txt>
                   </View>
                 </Row>
                 {canAct ? (
                   <Row gap={8} style={{ marginTop: 12 }}>
                     <Btn
-                      title="Chat"
+                      title={chatOpeningId === o.id ? 'Opening…' : 'Chat'}
                       variant="outline"
                       sm
                       style={{ flex: 1 }}
-                      onPress={() => nav.navigate('ChatThread', { threadId: String(o.id), vendorName })}
+                      disabled={chatOpeningId === o.id}
+                      onPress={() => openChat(o)}
                     />
                     <Btn
                       title="View Details"
@@ -138,6 +166,7 @@ export const MyOrdersScreen: React.FC = () => {
                   </Row>
                 ) : null}
               </Card>
+              </Pressable>
             );
           })
         )}

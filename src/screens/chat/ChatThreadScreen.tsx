@@ -12,7 +12,7 @@ import { Row, Txt, Icon, IconBox } from '@ui';
 import { colors, radius, fontSize } from '@theme';
 import { chatApi } from '../../api';
 import type { ChatMessage } from '../../api';
-import { avatarUrl } from '../profile/shared';
+import { avatarUrl, mediaUrl } from '../profile/shared';
 import { useAuth } from '../../context/AuthContext';
 import type { RootStackParamList } from '@navigation/types';
 
@@ -58,7 +58,7 @@ export const ChatThreadScreen: React.FC<Props> = ({ route }) => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
-  const [other, setOther] = useState<{ name?: string; avatar?: string | null } | null>(null);
+  const [other, setOther] = useState<{ name?: string; avatar?: string | null; avatar_url?: string | null } | null>(null);
   const [attachSheet, setAttachSheet] = useState(false);
 
   const listRef = useRef<FlatList<Msg>>(null);
@@ -67,7 +67,7 @@ export const ChatThreadScreen: React.FC<Props> = ({ route }) => {
   const pendingRef = useRef<(() => void) | null>(null);
 
   const headerName = other?.name ?? route.params?.vendorName ?? 'Vendor';
-  const headerAvatar = avatarUrl(other?.avatar);
+  const headerAvatar = other?.avatar_url ?? avatarUrl(other?.avatar);
   const initials = headerName.split(' ').slice(0, 2).map((w: string) => w[0] ?? '').join('').toUpperCase();
 
   const scrollToEnd = () => setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
@@ -214,21 +214,24 @@ export const ChatThreadScreen: React.FC<Props> = ({ route }) => {
   /* ── message bubble ── */
   const renderItem = ({ item }: { item: Msg }) => {
     const isMe = item.sender_id === myId;
-    const imageUri = item._localUri ?? item.attachment_url;
-    const docName = item.body || fileNameFromUrl(item.attachment_url);
+    // Attachments arrive as `attachment_url` OR a storage `attachment_path`; both
+    // are resolved to an absolute URL. The local pick (optimistic) wins for display.
+    const remoteUri = mediaUrl(item.attachment_url ?? item.attachment_path);
+    const imageUri = item._localUri ?? remoteUri;
+    const docName = item.body || fileNameFromUrl(item.attachment_url ?? item.attachment_path);
 
     return (
       <View style={[styles.msgRow, { alignItems: isMe ? 'flex-end' : 'flex-start' }]}>
         {item.type === 'image' && imageUri ? (
           <Pressable
-            onPress={() => openUrl(item.attachment_url)}
+            onPress={() => openUrl(remoteUri ?? item._localUri)}
             style={[styles.bubble, isMe ? styles.bubbleOut : styles.bubbleIn, styles.imageBubble]}
           >
             <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
           </Pressable>
         ) : item.type === 'file' ? (
           <Pressable
-            onPress={() => openUrl(item.attachment_url ?? item._localUri)}
+            onPress={() => openUrl(remoteUri ?? item._localUri)}
             style={[styles.bubble, isMe ? styles.bubbleOut : styles.bubbleIn, styles.docRow]}
           >
             <View style={[styles.docIcon, { backgroundColor: isMe ? 'rgba(255,255,255,0.2)' : colors.primaryLight }]}>

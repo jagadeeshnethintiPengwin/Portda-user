@@ -33,7 +33,7 @@ export const profileApi = {
   uploadAvatar: (uri: string, name: string, type = 'image/jpeg') => {
     const formData = new FormData();
     formData.append('avatar', { uri, name, type } as any);
-    return api<{ avatar: string; url: string }>('/profile/avatar', { method: 'POST', body: formData });
+    return api<{ avatar: string; path?: string; url: string }>('/profile/avatar', { method: 'POST', body: formData });
   },
 
   getNotificationPrefs: () =>

@@ -1,11 +1,11 @@
 import React from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Share, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, Chip, ImgPh, Divider, Icon } from '@ui';
 import { colors } from '@theme';
-import { IconBtnBox, Stars, qs } from './shared';
-import { quotationsApi, ApiError } from '../../api';
+import { IconBtnBox, Stars } from './shared';
+import { quotationsApi } from '../../api';
 import type { Quotation } from '../../api';
 import type { RootStackParamList } from '@navigation/types';
 
@@ -50,19 +50,34 @@ export const QuotationDetailsScreen: React.FC<Props> = ({ route }) => {
 
   const vendor = quotation.vendor;
   const vendorInitials = initials(vendor?.company_name ?? 'Vendor');
+  // rating/amount can arrive as strings ("4.90") — coerce so .toFixed/format work.
+  const rating = vendor?.rating != null && !isNaN(Number(vendor.rating)) ? Number(vendor.rating) : null;
+  const amount = Number(quotation.amount) || 0;
+
+  const onShare = async () => {
+    try {
+      await Share.share({
+        message: `Quote from ${vendor?.company_name ?? 'a vendor'}: ₹${amount.toLocaleString('en-IN')} — on PORTDA`,
+      });
+    } catch {/* dismissed */}
+  };
 
   return (
     <Screen>
-      <Topbar title="Quotation" onBack={() => nav.goBack()} right={<IconBtnBox name="tray" />} />
+      <Topbar
+        title="Quotation"
+        onBack={() => nav.goBack()}
+        right={<Pressable onPress={onShare} hitSlop={8}><IconBtnBox name="tray" /></Pressable>}
+      />
       <ScreenBody>
         <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <ImgPh label={vendorInitials} height={44} rounded={11} style={{ width: 44 }} />
           <View style={{ flex: 1 }}>
             <Txt size="sm" weight="bold">{vendor?.company_name ?? 'Vendor'}</Txt>
             <Row gap={6} style={{ marginTop: 4 }}>
-              {vendor?.rating ? <Stars filled={Math.round(vendor.rating)} /> : null}
+              {rating !== null ? <Stars filled={Math.round(rating)} /> : null}
               <Txt size="xs" color={colors.text2}>
-                {vendor?.rating?.toFixed(1) ?? '—'}{vendor?.is_verified ? ' · Verified' : ''}
+                {rating !== null ? rating.toFixed(1) : '—'}{vendor?.is_verified ? ' · Verified' : ''}
               </Txt>
             </Row>
           </View>
@@ -82,12 +97,12 @@ export const QuotationDetailsScreen: React.FC<Props> = ({ route }) => {
         <Card style={{ marginTop: 8, padding: 16 }}>
           <RowBetween>
             <Txt size="sm">Amount</Txt>
-            <Txt size="sm" weight="semi">₹{quotation.amount.toLocaleString('en-IN')}</Txt>
+            <Txt size="sm" weight="semi">₹{amount.toLocaleString('en-IN')}</Txt>
           </RowBetween>
           <Divider />
           <RowBetween>
             <Txt size="md" weight="bold">Total payable</Txt>
-            <Txt size="xl" weight="bold" color={colors.primary}>₹{quotation.amount.toLocaleString('en-IN')}</Txt>
+            <Txt size="xl" weight="bold" color={colors.primary}>₹{amount.toLocaleString('en-IN')}</Txt>
           </RowBetween>
           {quotation.valid_until ? (
             <Txt size="xs" color={colors.text2} style={{ marginTop: 4 }}>Valid until {quotation.valid_until}</Txt>
