@@ -21,7 +21,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen, ScreenBody, BottomCta, Btn, Txt, Topbar, IconBox, Icon } from '@ui';
 import { colors, font, radius } from '@theme';
 import type { AuthStackParamList } from '@navigation/types';
-import { authApi, ApiError } from '../../api';
+import { authApi, profileApi, ApiError } from '../../api';
 import { useAuth } from '../../context/AuthContext';
 
 /* ─── constants ─────────────────────────────────────────────────── */
@@ -37,9 +37,11 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Otp'>;
 export const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const identifier = route.params?.identifier ?? '';
   const display = route.params?.display ?? identifier;
+  const purpose = route.params?.purpose ?? 'login';
+  const register = route.params?.register;
   const isEmail = identifier.includes('@');
 
-  const { setAuth } = useAuth();
+  const { setAuth, updateUser } = useAuth();
   const [otp, setOtp] = useState(['', '', '', '']);
   const [focusedIdx, setFocusedIdx] = useState<number | null>(null);
   const [secs, setSecs] = useState(RESEND_SECS);
@@ -83,7 +85,7 @@ export const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const handleResend = async () => {
     if (secs > 0) return;
     try {
-      await authApi.requestOtp(identifier);
+      await authApi.requestOtp(identifier, purpose);
       setOtp(['', '', '', '']);
       setSecs(RESEND_SECS);
       inputRefs[0].current?.focus();
@@ -108,8 +110,40 @@ export const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
     submitLock.current = true;
     setVerifying(true);
     try {
-      const { user, token } = await authApi.verifyOtp(identifier, code);
-      await setAuth(user, token);
+      let user;
+      let token;
+      if (purpose === 'register' && register) {
+        // OTP-first registration: the code verifies the channel AND creates the
+        // account in one call (api-user.md §2). Returns { user, token }.
+        ({ user, token } = await authApi.register({
+          name: register.name,
+          identifier,
+          otp_code: code,
+          password: register.password,
+          password_confirmation: register.password,
+          role: 'buyer',
+        }));
+        await setAuth(user, token);
+
+        // Best-effort: persist the extra details collected on the register form
+        // (phone, company, GSTIN) that the register endpoint itself doesn't take.
+        const extra: Record<string, string> = {};
+        if (register.phone) extra.phone = register.phone;
+        if (register.company_name) extra.company_name = register.company_name;
+        if (register.gst_number) extra.gst_number = register.gst_number;
+        if (Object.keys(extra).length > 0) {
+          try {
+            const updated = await profileApi.update(extra);
+            updateUser(updated);
+          } catch {
+            /* non-fatal — the account exists; profile fields can be edited later */
+          }
+        }
+      } else {
+        // Passwordless login.
+        ({ user, token } = await authApi.verifyOtp(identifier, code, purpose));
+        await setAuth(user, token);
+      }
 
       // Reset root stack to [Main], clearing all auth screens from history.
       navigation.getParent()?.dispatch(
@@ -122,11 +156,11 @@ export const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
       submitLock.current = false;
       setVerifying(false);
       const msg = err instanceof ApiError ? err.message : 'Verification failed. Try again.';
-      Alert.alert('Invalid OTP', msg);
+      Alert.alert(purpose === 'register' ? 'Registration Failed' : 'Invalid OTP', msg);
       setOtp(['', '', '', '']);
       inputRefs[0].current?.focus();
     }
-  }, [verifying, otp, identifier, setAuth, navigation, inputRefs]);
+  }, [verifying, otp, identifier, purpose, register, setAuth, updateUser, navigation, inputRefs]);
 
   /* Auto-submit when all 4 digits are filled */
   const complete = otp.every(d => d !== '');

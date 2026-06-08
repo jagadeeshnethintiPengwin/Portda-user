@@ -148,22 +148,26 @@ export const RegisterScreen: React.FC = () => {
     if (!canSubmit || loading) return;
     setLoading(true);
     try {
+      // OTP-first registration (api-user.md §2): send a code to the work email,
+      // then finalize the account on the OTP screen once it's verified.
+      const identifier = email.trim();
+      await authApi.requestOtp(identifier, 'register');
+      // Passwordless UX — the user signs in via OTP, so we register with a
+      // strong synthetic password they never need to type.
       const pw = `Portda@${Date.now()}`;
-      await authApi.register({
-        name: name.trim(),
-        email: email.trim(),
-        phone: `+91${digits}`,
-        password: pw,
-        password_confirmation: pw,
-        role: 'buyer',
+      nav.navigate('Otp', {
+        identifier,
+        display: identifier,
+        purpose: 'register',
+        register: {
+          name: name.trim(),
+          password: pw,
+          phone: `+91${digits}`,
+          company_name: company.trim() || undefined,
+          gst_number: gstin.trim() || undefined,
+        },
       });
-      Alert.alert(
-        'Account Created',
-        'Your account is ready. Please sign in to continue.',
-        [{ text: 'Sign In', onPress: () => nav.replace('Login') }],
-      );
     } catch (err) {
-      setLoading(false);
       if (err instanceof ApiError && err.errors) {
         const firstMsg = Object.values(err.errors)[0]?.[0] ?? err.message;
         Alert.alert('Registration Failed', firstMsg);
@@ -171,6 +175,8 @@ export const RegisterScreen: React.FC = () => {
         const msg = err instanceof ApiError ? err.message : 'Registration failed.';
         Alert.alert('Registration Failed', msg);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -250,7 +256,7 @@ export const RegisterScreen: React.FC = () => {
         </Pressable>
 
         <Btn
-          title={loading ? 'Creating account…' : 'Create Account'}
+          title={loading ? 'Sending code…' : 'Create Account'}
           style={{ marginTop: 16 }}
           disabled={!canSubmit || loading}
           onPress={handleRegister}

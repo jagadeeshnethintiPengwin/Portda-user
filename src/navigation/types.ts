@@ -17,7 +17,23 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type AuthStackParamList = {
   Login: undefined;
-  Otp: { identifier: string; display: string };
+  /**
+   * OTP screen. `purpose` defaults to `login` (passwordless sign-in). When
+   * `purpose` is `register`, `register` carries the details needed to create
+   * the account once the code is verified (api-user.md §2 OTP-first register).
+   */
+  Otp: {
+    identifier: string;
+    display: string;
+    purpose?: 'login' | 'register';
+    register?: {
+      name: string;
+      password: string;
+      phone?: string;
+      company_name?: string;
+      gst_number?: string;
+    };
+  };
   EmailLogin: { email?: string } | undefined;
   Forgot: undefined;
   /** `token` is optional – deep-link resets may or may not pre-supply it */
@@ -113,6 +129,7 @@ export type RootStackParamList = {
   ContactSupport: undefined;
 
   // ── Settings ─────────────────────────────────────────────────
+  Settings: undefined;
   Terms: undefined;
   Privacy: undefined;
   About: undefined;

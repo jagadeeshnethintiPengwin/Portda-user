@@ -1,10 +1,13 @@
 import React from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-import { Screen, ScreenBody, Topbar, Btn, Card, Row, RowBetween, Txt, Chip } from '@ui';
+import {
+  Screen, ScreenBody, Topbar, Btn, Card, Row, RowBetween, Txt, Chip,
+  SearchBar, IconBox, Icon,
+} from '@ui';
 import { colors } from '@theme';
-import { IconBtnBox, AVATAR_TONE, os } from './shared';
+import { AVATAR_TONE, os } from './shared';
 import { ordersApi } from '../../api';
 import type { Order } from '../../api';
 
@@ -28,6 +31,7 @@ const TONE_KEYS = ['primary', 'accent', 'success', 'warning'] as const;
 export const MyOrdersScreen: React.FC = () => {
   const nav = useNavigation<any>();
   const [orders, setOrders] = React.useState<Order[]>([]);
+  const [query, setQuery] = React.useState('');
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -37,16 +41,56 @@ export const MyOrdersScreen: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Client-side search — the orders endpoint has no `q` filter (api-user.md §9),
+  // and a buyer's order list is small, so we filter what we've loaded.
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? orders.filter(o =>
+        o.reference?.toLowerCase().includes(q) ||
+        o.vendor?.company_name?.toLowerCase().includes(q) ||
+        o.service_request?.vessel_name?.toLowerCase().includes(q) ||
+        o.service_request?.title?.toLowerCase().includes(q))
+    : orders;
+
   return (
     <Screen>
-      <Topbar title="My Orders" onBack={undefined} right={<IconBtnBox name="search" />} />
-      <ScreenBody>
+      <Topbar title="My Orders" onBack={undefined} />
+
+      <View style={ms.subheader}>
+        <SearchBar
+          placeholder="Search by order #, vendor or vessel…"
+          value={query}
+          onChangeText={setQuery}
+          mic={false}
+          iconSize={22}
+        />
+      </View>
+
+      <ScreenBody style={{ backgroundColor: colors.bg }}>
+        {!loading ? (
+          <Txt size="xs" color={colors.text2} style={{ marginBottom: 10 }}>
+            <Txt size="xs" weight="bold">{filtered.length}</Txt>
+            {' '}{filtered.length === 1 ? 'order' : 'orders'}
+            {q ? ` for "${query.trim()}"` : ''}
+          </Txt>
+        ) : null}
+
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
-        ) : orders.length === 0 ? (
-          <Txt size="md" color={colors.text2} center style={{ marginTop: 40 }}>No orders yet.</Txt>
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />
+        ) : filtered.length === 0 ? (
+          <View style={ms.empty}>
+            <IconBox size={64} rounded={20} bg="#fff">
+              <Icon name={q ? 'search' : 'package'} size={26} color={colors.text3} />
+            </IconBox>
+            <Txt size="md" weight="semi" style={{ marginTop: 14 }}>
+              {q ? 'No matching orders' : 'No orders yet'}
+            </Txt>
+            <Txt size="sm" color={colors.text2} center style={{ marginTop: 4, paddingHorizontal: 24 }}>
+              {q ? 'Try a different order number, vendor or vessel.' : 'Accepted quotes become orders you can track here.'}
+            </Txt>
+          </View>
         ) : (
-          orders.map((o, idx) => {
+          filtered.map((o, idx) => {
             const tone = TONE_KEYS[idx % TONE_KEYS.length];
             const vendorName = o.vendor?.company_name ?? 'Vendor';
             const vendorInitials = initials(vendorName);
@@ -102,3 +146,14 @@ export const MyOrdersScreen: React.FC = () => {
   );
 };
 
+const ms = StyleSheet.create({
+  subheader: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border2,
+  },
+  empty: { alignItems: 'center', marginTop: 48 },
+});

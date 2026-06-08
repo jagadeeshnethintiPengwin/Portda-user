@@ -100,7 +100,7 @@ export const PortBerthScreen: React.FC = () => {
                     <Txt size="sm" weight={active ? 'bold' : 'semi'}>{p.name}</Txt>
                     <Chip label={p.code} variant={active ? 'primary' : 'gray'} />
                   </RowBetween>
-                  <Txt size="xs" color={colors.text2} style={{ marginTop: 4 }}>{p.city}, {p.country}</Txt>
+                  <Txt size="xs" color={colors.text2} style={{ marginTop: 4 }}>{[p.city ?? p.region, p.country].filter(Boolean).join(', ')}</Txt>
                 </View>
               </View>
             );

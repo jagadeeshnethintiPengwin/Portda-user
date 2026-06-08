@@ -40,7 +40,8 @@ export const ChangeContactScreen: React.FC = () => {
   const input1 = useRef<TextInput>(null);
   const input2 = useRef<TextInput>(null);
   const input3 = useRef<TextInput>(null);
-  const inputRefs = [input0, input1, input2, input3];
+  // Stable array so it doesn't re-create each render (keeps useCallback deps stable).
+  const inputRefs = useRef([input0, input1, input2, input3]).current;
 
   /* countdown timer */
   useEffect(() => {
@@ -61,7 +62,7 @@ export const ChangeContactScreen: React.FC = () => {
     setSending(true);
     try {
       const id = isPhone ? `+91${digits}` : value.trim();
-      await authApi.requestOtp(id);
+      await authApi.requestOtp(id, 'verify');
       setIdentifier(id);
       setDisplay(isPhone ? `+91 ${value}` : value.trim());
       setSecs(RESEND_SECS);
@@ -93,7 +94,7 @@ export const ChangeContactScreen: React.FC = () => {
   const handleResend = async () => {
     if (secs > 0) return;
     try {
-      await authApi.requestOtp(identifier);
+      await authApi.requestOtp(identifier, 'verify');
       setOtp(['', '', '', '']);
       setSecs(RESEND_SECS);
       inputRefs[0].current?.focus();
@@ -110,7 +111,7 @@ export const ChangeContactScreen: React.FC = () => {
     setVerifying(true);
     try {
       /* verify OTP — confirms ownership of the new contact */
-      await authApi.verifyOtp(identifier, code);
+      await authApi.verifyOtp(identifier, code, 'verify');
       /* save to profile — update whichever channel the user is changing */
       const updated = await profileApi.update({ [field]: identifier });
       updateUser(updated);

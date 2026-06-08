@@ -17,10 +17,17 @@ const PreviewRow: React.FC<{ label: string; onEdit?: () => void; children: React
   </Card>
 );
 
+/* Badge shown when the request carries an elevated urgency. */
+const URGENCY_META: Record<string, { label: string; bg: string }> = {
+  urgent:   { label: '⚡ URGENT',    bg: colors.warning },
+  critical: { label: '⚡ EMERGENCY', bg: colors.danger },
+};
+
 /* 4.7 Request Preview */
 export const RequestPreviewScreen: React.FC = () => {
   const nav = useNavigation<any>();
   const { draft, resetDraft } = useRequestDraft();
+  const urgencyMeta = URGENCY_META[draft.urgency];
   const [agreed, setAgreed] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -51,6 +58,7 @@ export const RequestPreviewScreen: React.FC = () => {
         description: draft.description.trim() || undefined,
         service_date: draft.serviceDate || undefined,
         service_time: draft.serviceTime || undefined,
+        currency: 'INR',
         budget_min: draft.budgetMin ? Number(draft.budgetMin) : undefined,
         budget_max: draft.budgetMax ? Number(draft.budgetMax) : undefined,
         urgency: draft.urgency,
@@ -74,6 +82,13 @@ export const RequestPreviewScreen: React.FC = () => {
             {draft.title || `${draft.categoryName || 'Service'} at ${draft.portName || 'Port'}`}
           </Txt>
           <Row gap={6} style={{ marginTop: 8, flexWrap: 'wrap' }}>
+            {urgencyMeta ? (
+              <View style={[rs.heroChip, { backgroundColor: urgencyMeta.bg }]}>
+                <Text style={{ color: '#fff', fontSize: fontSize.xs, fontWeight: '700' }}>
+                  {urgencyMeta.label}
+                </Text>
+              </View>
+            ) : null}
             {[draft.categoryName, draft.subcategoryName].filter(Boolean).map(t => (
               <View key={t} style={rs.heroChip}>
                 <Text style={{ color: '#fff', fontSize: fontSize.xs, fontWeight: '600' }}>{t}</Text>

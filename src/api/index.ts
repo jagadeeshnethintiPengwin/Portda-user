@@ -1,7 +1,7 @@
 export { api, ApiError, getStoredToken, storeToken, removeToken, BASE_URL, TOKEN_KEY } from './client';
-export type { User, BuyerProfile, Port, Category, Subcategory, VendorProfile, ServiceRequest, Quotation, Order, Payment, PaymentInitiateResponse, GatewayInfo, Invoice, OrderEvent, ChatRoom, ChatMessage, Notification, Dashboard, Review, KycDocument } from './types';
+export type { User, BuyerProfile, Port, HeroSlide, Category, Subcategory, VendorProfile, ServiceRequest, Quotation, Order, Payment, PaymentInitiateResponse, GatewayInfo, Invoice, OrderEvent, ChatRoom, ChatMessage, Notification, Dashboard, Review, KycDocument } from './types';
 export { authApi } from './auth';
-export type { AuthResponse, OtpRequestResponse } from './auth';
+export type { AuthResponse, OtpRequestResponse, OtpPurpose } from './auth';
 export { catalogApi } from './catalog';
 export { dashboardApi } from './dashboard';
 export { vendorsApi } from './vendors';
@@ -17,6 +17,6 @@ export type { PaymentFilters } from './payments';
 export { chatApi } from './chat';
 export { notificationsApi } from './notifications';
 export { profileApi } from './profile';
-export type { UpdateProfilePayload } from './profile';
+export type { UpdateProfilePayload, NotificationPrefs } from './profile';
 export { reviewsApi } from './reviews';
 export { devicesApi } from './devices';

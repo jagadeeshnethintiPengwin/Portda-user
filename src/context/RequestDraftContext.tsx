@@ -20,7 +20,7 @@ export interface RequestDraft {
   serviceTime: string;
   budgetMin: string;
   budgetMax: string;
-  urgency: 'standard' | 'urgent' | 'emergency';
+  urgency: 'standard' | 'urgent' | 'critical';
 }
 
 interface RequestDraftContextValue {

@@ -1,11 +1,11 @@
 import React from 'react';
-import { ActivityIndicator, Share, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Share, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, Chip, ImgPh, Icon } from '@ui';
 import { colors } from '@theme';
 import { IconBtnBox, Stars, qs } from './shared';
-import { vendorsApi, reviewsApi, chatApi } from '../../api';
+import { vendorsApi, reviewsApi, chatApi, ApiError } from '../../api';
 import type { VendorProfile, Review } from '../../api';
 import type { RootStackParamList } from '@navigation/types';
 
@@ -34,6 +34,7 @@ export const VendorProfileScreen: React.FC<Props> = ({ route }) => {
   const [vendor, setVendor] = React.useState<VendorProfile | null>(null);
   const [reviews, setReviews] = React.useState<Review[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [chatOpening, setChatOpening] = React.useState(false);
 
   React.useEffect(() => {
     if (!vendorId) { setLoading(false); return; }
@@ -44,8 +45,10 @@ export const VendorProfileScreen: React.FC<Props> = ({ route }) => {
   }, [vendorId]);
 
   const name = vendor?.company_name ?? 'Vendor';
-  const rating = vendor?.rating ?? null;
-  const jobs = vendor?.jobs_completed ?? 0;
+  // The API may send rating/jobs as strings ("4.90") — coerce to numbers so
+  // `.toFixed()` and numeric display work.
+  const rating = vendor?.rating != null && !isNaN(Number(vendor.rating)) ? Number(vendor.rating) : null;
+  const jobs = Number(vendor?.jobs_completed ?? 0) || 0;
 
   const onShare = async () => {
     try {
@@ -59,13 +62,23 @@ export const VendorProfileScreen: React.FC<Props> = ({ route }) => {
   };
 
   const openChat = async () => {
-    const counterpartyId = vendor?.user?.id;
-    if (!counterpartyId) return;
+    if (chatOpening) return;
+    // The vendor's user id is the chat counterparty — prefer the nested user
+    // object, fall back to `user_id` (always present on the vendor profile).
+    const counterpartyId = vendor?.user?.id ?? vendor?.user_id;
+    if (!counterpartyId) {
+      Alert.alert('Chat unavailable', 'This vendor can’t be messaged right now.');
+      return;
+    }
+    setChatOpening(true);
     try {
+      // Open (or fetch the existing) 1‑to‑1 room, then go straight to the thread.
       const room = await chatApi.openRoom({ counterparty_user_id: counterpartyId });
       nav.navigate('ChatThread', { threadId: String(room.id), vendorName: name });
-    } catch {
-      // ignore — couldn't open room
+    } catch (err) {
+      Alert.alert('Could not open chat', err instanceof ApiError ? err.message : 'Please try again.');
+    } finally {
+      setChatOpening(false);
     }
   };
 
@@ -109,7 +122,17 @@ export const VendorProfileScreen: React.FC<Props> = ({ route }) => {
           ))}
         </View>
         <Row gap={8} style={{ marginTop: 12 }}>
-          <Btn title="Chat" variant="outline" sm style={{ flex: 1 }} left={<Icon name="chat" size={14} color={colors.primary} />} onPress={openChat} />
+          <Btn
+            title={chatOpening ? 'Opening…' : 'Chat'}
+            variant="outline"
+            sm
+            style={{ flex: 1 }}
+            disabled={chatOpening}
+            left={chatOpening
+              ? <ActivityIndicator size="small" color={colors.primary} />
+              : <Icon name="chat" size={14} color={colors.primary} />}
+            onPress={openChat}
+          />
           <Btn title="Call" variant="outline" sm style={{ flex: 1 }} left={<Icon name="phone" size={14} color={colors.primary} />} />
           <Btn title="Share" variant="outline" sm style={{ flex: 1 }} left={<Icon name="tray" size={14} color={colors.primary} />} onPress={onShare} />
         </Row>

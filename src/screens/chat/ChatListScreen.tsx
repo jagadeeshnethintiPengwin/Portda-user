@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, ScreenBody, Topbar, RowBetween, Txt, Icon } from '@ui';
+import { Screen, ScreenBody, Topbar, RowBetween, Txt, SearchBar, IconBox, Icon } from '@ui';
 import { colors, radius } from '@theme';
 import { chatApi } from '../../api';
 import type { ChatRoom } from '../../api';
@@ -25,11 +25,17 @@ function initials(name: string): string {
   return name.split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase();
 }
 
+function roomName(room: ChatRoom): string {
+  const c = room.counterparty;
+  return c?.buyer_profile?.company_name ?? c?.name ?? 'Vendor';
+}
+
 /* 6.1 Chat List */
 export const ChatListScreen: React.FC = () => {
   const nav = useNavigation<any>();
   const { user } = useAuth();
   const [rooms, setRooms] = React.useState<ChatRoom[]>([]);
+  const [query, setQuery] = React.useState('');
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
@@ -39,18 +45,47 @@ export const ChatListScreen: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Client-side search — chat rooms have no `q` filter, so we filter the
+  // loaded conversations by counterparty name and last-message text.
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? rooms.filter(r =>
+        roomName(r).toLowerCase().includes(q) ||
+        (r.last_message?.body ?? '').toLowerCase().includes(q))
+    : rooms;
+
   return (
     <Screen>
-      <Topbar title="Messages" onBack={undefined} right={<View style={styles.iconBtn}><Icon name="search" size={18} color={colors.text} /></View>} />
-      <ScreenBody>
+      <Topbar title="Messages" onBack={undefined} />
+
+      <View style={styles.subheader}>
+        <SearchBar
+          placeholder="Search conversations…"
+          value={query}
+          onChangeText={setQuery}
+          mic={false}
+          iconSize={22}
+        />
+      </View>
+
+      <ScreenBody style={{ backgroundColor: colors.bg }}>
         {loading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
-        ) : rooms.length === 0 ? (
-          <Txt size="md" color={colors.text2} center style={{ marginTop: 40 }}>No conversations yet.</Txt>
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 32 }} />
+        ) : filtered.length === 0 ? (
+          <View style={styles.empty}>
+            <IconBox size={64} rounded={20} bg="#fff">
+              <Icon name={q ? 'search' : 'message-circle'} size={26} color={colors.text3} />
+            </IconBox>
+            <Txt size="md" weight="semi" style={{ marginTop: 14 }}>
+              {q ? 'No matching chats' : 'No conversations yet'}
+            </Txt>
+            <Txt size="sm" color={colors.text2} center style={{ marginTop: 4, paddingHorizontal: 24 }}>
+              {q ? 'Try a different vendor or keyword.' : 'Chats with vendors will appear here.'}
+            </Txt>
+          </View>
         ) : (
-          rooms.map(room => {
-            const counterparty = room.counterparty;
-            const name = counterparty?.buyer_profile?.company_name ?? counterparty?.name ?? 'Vendor';
+          filtered.map(room => {
+            const name = roomName(room);
             const lastMsg = room.last_message;
             const preview = lastMsg?.body ?? (lastMsg?.type === 'image' ? '📷 Image' : lastMsg?.type === 'file' ? '📄 File' : '');
             const time = lastMsg ? timeAgo(lastMsg.created_at) : '';
@@ -94,7 +129,15 @@ export const ChatListScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  iconBtn: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+  subheader: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border2,
+  },
+  empty: { alignItems: 'center', marginTop: 48 },
   listItem: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border2, marginTop: 8 },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   unread: { backgroundColor: colors.primaryLight, paddingHorizontal: 6, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },

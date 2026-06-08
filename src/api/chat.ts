@@ -4,6 +4,9 @@ import type { ChatRoom, ChatMessage } from './types';
 export const chatApi = {
   rooms: () => api<ChatRoom[]>('/chat/rooms'),
 
+  // Unread incoming messages across all rooms — for the Chat tab badge.
+  unreadCount: () => api<{ count: number }>('/chat/unread-count'),
+
   openRoom: (data: {
     counterparty_user_id: number;
     service_request_id?: number | null;

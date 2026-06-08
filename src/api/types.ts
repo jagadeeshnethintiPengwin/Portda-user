@@ -33,8 +33,22 @@ export interface Port {
   id: number;
   name: string;
   code: string;
-  city: string;
+  /** Geographic region, e.g. "South" (returned by `/catalog/ports`). */
+  region: string | null;
+  /** City is not returned by every backend build — keep optional. */
+  city?: string | null;
   country: string;
+}
+
+export interface HeroSlide {
+  id: number;
+  title: string;
+  subtitle: string | null;
+  image_path: string | null;
+  cta_text: string | null;
+  cta_url: string | null;
+  display_order: number;
+  is_active: boolean;
 }
 
 export interface Category {
@@ -80,7 +94,7 @@ export interface ServiceRequest {
   service_time: string | null;
   budget_min: number | null;
   budget_max: number | null;
-  urgency: 'standard' | 'urgent' | 'emergency';
+  urgency: 'standard' | 'urgent' | 'critical';
   status: 'open' | 'quoted' | 'awarded' | 'in_progress' | 'completed' | 'cancelled';
   created_at: string;
   port?: Port;

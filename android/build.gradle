@@ -19,4 +19,12 @@ buildscript {
     }
 }
 
+// Tell RN libraries (gesture-handler, screens, svg, …) where react-native lives
+// so they DON'T shell out to `node` during Gradle sync. Android Studio launches
+// with a minimal PATH that doesn't include Homebrew's node, which otherwise fails
+// with: Cannot run program "node" ... No such file or directory.
+ext {
+    REACT_NATIVE_NODE_MODULES_DIR = "${rootDir}/../node_modules/react-native"
+}
+
 apply plugin: "com.facebook.react.rootproject"

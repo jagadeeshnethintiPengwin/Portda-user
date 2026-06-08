@@ -25,6 +25,10 @@ export const vendorsApi = {
     return api<VendorProfile[]>(`/vendors${qs ? `?${qs}` : ''}`);
   },
 
-  get: (vendorProfileId: number | string) =>
-    api<VendorProfile>(`/vendors/${vendorProfileId}`),
+  // GET /vendors/{id} returns { vendor, reviews }; the list endpoint is flat.
+  // Unwrap so callers always receive a flat VendorProfile.
+  get: async (vendorProfileId: number | string): Promise<VendorProfile> => {
+    const data = await api<any>(`/vendors/${vendorProfileId}`);
+    return (data?.vendor ?? data) as VendorProfile;
+  },
 };

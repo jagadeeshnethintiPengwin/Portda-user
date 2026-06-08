@@ -195,7 +195,18 @@ export const CreateRequestScreen: React.FC<Props> = ({ route }) => {
           <Txt size="xs" color={colors.text2} style={{ marginTop: 4 }}>
             Get priority quotes from on-call emergency tugs, salvage & medical services
           </Txt>
-          <Btn title="⚡ Emergency Request" variant="outline" sm style={{ marginTop: 8 }} />
+          <Btn
+            title="⚡ Emergency Request"
+            variant="outline"
+            sm
+            style={{ marginTop: 8 }}
+            onPress={() => {
+              // Flag the whole request as critical so it's submitted with the
+              // highest urgency (priority quotes), then enter the service picker.
+              setDraftField('urgency', 'critical');
+              nav.navigate('SelectServiceType');
+            }}
+          />
         </Card>
       </ScreenBody>
       <BottomCta>

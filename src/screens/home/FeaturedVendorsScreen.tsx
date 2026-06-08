@@ -10,7 +10,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
-import { Screen, ScreenBody, Topbar, Btn, Row, RowBetween, Txt, Icon } from '@ui';
+import { Screen, ScreenBody, Topbar, Btn, Row, RowBetween, Txt, SearchBar } from '@ui';
 import { colors, font, fontSize, gradients, radius, shadow } from '@theme';
 import { vendorsApi, catalogApi } from '../../api';
 import type { VendorProfile, Category } from '../../api';
@@ -44,47 +44,72 @@ export const FeaturedVendorsScreen: React.FC = () => {
   const incomingCategoryId = route.params?.category_id;
   const incomingSubcategoryId = route.params?.subcategory_id;
 
+  const [query, setQuery] = React.useState(incomingQ ?? '');
+  const [debouncedQ, setDebouncedQ] = React.useState((incomingQ ?? '').trim());
   const [vendors, setVendors] = React.useState<VendorProfile[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [filterIdx, setFilterIdx] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
-  const [filterLoading, setFilterLoading] = React.useState(false);
+  const [searching, setSearching] = React.useState(false);
+  // True once the user types a query or taps a chip — after that we stop
+  // applying the (one-shot) incoming subcategory deep-link filter.
+  const interacted = React.useRef(false);
 
-  /* Initial load — vendors (honouring any incoming filter) + categories. */
+  /* Load the category chips once; pre-select the chip if we arrived with one. */
   React.useEffect(() => {
-    const initialFilter = {
-      ...(incomingQ ? { q: incomingQ } : {}),
-      ...(incomingCategoryId ? { category_id: incomingCategoryId } : {}),
-      ...(incomingSubcategoryId ? { subcategory_id: incomingSubcategoryId } : {}),
-    };
-    Promise.all([vendorsApi.list(initialFilter), catalogApi.categories()])
-      .then(([v, c]) => {
-        setVendors(Array.isArray(v) ? v : []);
-        setCategories(Array.isArray(c) ? c : []);
-        // Pre-select the matching filter chip when arriving with a category.
-        if (incomingCategoryId && Array.isArray(c)) {
-          const idx = c.findIndex(cat => cat.id === incomingCategoryId);
+    catalogApi.categories()
+      .then(c => {
+        const list = Array.isArray(c) ? c : [];
+        setCategories(list);
+        if (incomingCategoryId) {
+          const idx = list.findIndex(cat => cat.id === incomingCategoryId);
           if (idx >= 0) setFilterIdx(idx + 1);
         }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  // Re-run when navigated to with new params.
-  }, [incomingQ, incomingCategoryId, incomingSubcategoryId]);
+      .catch(() => {});
+  }, [incomingCategoryId]);
 
-  /* Re-fetch vendors when the user taps a category filter chip.
-     Skip on first render to avoid a duplicate call with the initial load. */
-  const firstRender = React.useRef(true);
+  /* Debounce the search box so we hit the API at most once per pause. */
   React.useEffect(() => {
-    if (firstRender.current) { firstRender.current = false; return; }
-    const chips = [{ id: null }, ...categories.map(c => ({ id: c.id }))];
-    const selected = chips[filterIdx];
-    setFilterLoading(true);
-    vendorsApi.list(selected?.id ? { category_id: selected.id } : {})
-      .then(v => setVendors(Array.isArray(v) ? v : []))
-      .catch(() => {})
-      .finally(() => setFilterLoading(false));
-  }, [filterIdx]); // eslint-disable-line react-hooks/exhaustive-deps
+    const t = setTimeout(() => setDebouncedQ(query.trim()), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const selectedCategoryId =
+    filterIdx > 0 ? categories[filterIdx - 1]?.id ?? null : null;
+
+  /* Fetch vendors whenever the (debounced) query or the selected category
+     changes. A per-run `alive` flag drops stale responses so the latest
+     query always wins, even if requests resolve out of order. */
+  React.useEffect(() => {
+    const filter = interacted.current
+      ? {
+          ...(debouncedQ ? { q: debouncedQ } : {}),
+          ...(selectedCategoryId ? { category_id: selectedCategoryId } : {}),
+        }
+      : {
+          ...(incomingQ ? { q: incomingQ } : {}),
+          ...(incomingCategoryId ? { category_id: incomingCategoryId } : {}),
+          ...(incomingSubcategoryId ? { subcategory_id: incomingSubcategoryId } : {}),
+        };
+    let alive = true;
+    setSearching(true);
+    vendorsApi.list(filter)
+      .then(v => { if (alive) setVendors(Array.isArray(v) ? v : []); })
+      .catch(() => { if (alive) setVendors([]); })
+      .finally(() => { if (alive) { setLoading(false); setSearching(false); } });
+    return () => { alive = false; };
+  }, [debouncedQ, selectedCategoryId, incomingQ, incomingCategoryId, incomingSubcategoryId]);
+
+  const onChangeQuery = (t: string) => {
+    interacted.current = true;
+    setQuery(t);
+  };
+
+  const onSelectChip = (i: number) => {
+    interacted.current = true;
+    setFilterIdx(i);
+  };
 
   const chips = [
     { id: null, label: 'All' },
@@ -93,16 +118,19 @@ export const FeaturedVendorsScreen: React.FC = () => {
 
   return (
     <Screen>
-      <Topbar
-        title="Top Vendors"
-        onBack={undefined}
-        right={
-          <View style={styles.headerBtn}>
-            <Icon name="search" size={18} color={colors.text} />
-          </View>
-        }
-      />
+      <Topbar title="Top Vendors" onBack={undefined} />
       <ScreenBody>
+        {/* Live search */}
+        <View style={styles.searchWrap}>
+          <SearchBar
+            placeholder="Search vendors, services…"
+            value={query}
+            onChangeText={onChangeQuery}
+            mic={false}
+            iconSize={24}
+          />
+        </View>
+
         {/* Category filter strip */}
         <ScrollView
           horizontal
@@ -113,7 +141,7 @@ export const FeaturedVendorsScreen: React.FC = () => {
           {chips.map((chip, i) => (
             <Pressable
               key={chip.label}
-              onPress={() => setFilterIdx(i)}
+              onPress={() => onSelectChip(i)}
               style={[styles.filterChip, i === filterIdx && styles.filterChipActive]}
             >
               <Text style={[styles.filterChipLabel, i === filterIdx && styles.filterChipLabelActive]}>
@@ -125,15 +153,20 @@ export const FeaturedVendorsScreen: React.FC = () => {
 
         <RowBetween style={{ marginBottom: 12 }}>
           <Txt size="xs" color={colors.text2}>
-            <Txt size="xs" weight="bold">{vendors.length} vendors</Txt> near you
+            <Txt size="xs" weight="bold">{vendors.length} vendors</Txt>
+            {debouncedQ ? ` for "${debouncedQ}"` : ' near you'}
           </Txt>
-          <Row gap={4}>
-            <Txt size="xs" color={colors.text2}>Sort:</Txt>
-            <Txt size="xs" color={colors.primary} weight="semi">Top rated ▾</Txt>
-          </Row>
+          {searching ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Row gap={4}>
+              <Txt size="xs" color={colors.text2}>Sort:</Txt>
+              <Txt size="xs" color={colors.primary} weight="semi">Top rated ▾</Txt>
+            </Row>
+          )}
         </RowBetween>
 
-        {loading || filterLoading ? (
+        {loading ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
         ) : vendors.length === 0 ? (
           <Txt size="md" color={colors.text2} center style={{ marginTop: 40 }}>
@@ -217,10 +250,7 @@ export const FeaturedVendorsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  headerBtn: {
-    width: 36, height: 36, borderRadius: radius.md,
-    backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center',
-  },
+  searchWrap: { marginBottom: 14 },
   filterStrip: { flexGrow: 0, marginHorizontal: -16, paddingLeft: 16, marginBottom: 16 },
   filterStripContent: { gap: 8, paddingRight: 16, alignItems: 'center' },
   filterChip: {

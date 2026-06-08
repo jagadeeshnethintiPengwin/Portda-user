@@ -1,3 +1,4 @@
+export * from './SettingsScreen';
 export * from './TermsScreen';
 export * from './PrivacyScreen';
 export * from './AboutScreen';

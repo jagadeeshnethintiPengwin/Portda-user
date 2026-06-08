@@ -7,6 +7,8 @@ export const reviewsApi = {
     return api<Review[]>(`/reviews${qs}`);
   },
 
+  get: (id: number | string) => api<Review>(`/reviews/${id}`),
+
   create: (data: {
     order_id: number;
     rating: number;

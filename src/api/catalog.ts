@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Port, Category } from './types';
+import type { Port, Category, HeroSlide } from './types';
 
 export const catalogApi = {
   ports: (q?: string) =>
@@ -13,4 +13,6 @@ export const catalogApi = {
 
   category: (idOrSlug: string | number) =>
     api<Category>(`/catalog/categories/${idOrSlug}`, {}, true),
+
+  heroSlides: () => api<HeroSlide[]>('/catalog/hero-slides', {}, true),
 };

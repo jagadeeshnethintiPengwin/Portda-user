@@ -85,6 +85,7 @@ import {
   ContactSupportScreen,
 } from '@screens/profile';
 import {
+  SettingsScreen,
   TermsScreen,
   PrivacyScreen,
   AboutScreen,
@@ -187,6 +188,7 @@ export const RootNavigator: React.FC = () => (
     <RootStack.Screen name="ContactSupport" component={ContactSupportScreen} />
 
     {/* Settings */}
+    <RootStack.Screen name="Settings" component={SettingsScreen} />
     <RootStack.Screen name="Terms" component={TermsScreen} />
     <RootStack.Screen name="Privacy" component={PrivacyScreen} />
     <RootStack.Screen name="About" component={AboutScreen} />

@@ -60,11 +60,12 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           onChange={setTab}
           style={{ marginBottom: 16 }}
           tabStyle={{ paddingVertical: 14 }}
-          textStyle={{ fontSize: 18 }}
+          textStyle={{ fontSize: 15 }}
         />
 
         {tab === 0 ? (
           <TextField
+            key="login-mobile"
             label="Mobile Number"
             value={mobile}
             onChangeText={setMobile}
@@ -77,6 +78,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           />
         ) : (
           <TextField
+            key="login-email"
             label="Work Email"
             value={email}
             onChangeText={setEmail}

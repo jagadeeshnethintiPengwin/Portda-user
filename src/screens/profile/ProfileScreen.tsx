@@ -1,26 +1,43 @@
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, ScreenBody, Topbar, Txt, Chip, Icon, HeroGradient } from '@ui';
 import { colors } from '@theme';
-import { IconBtnBox, ListGroup, pfs } from './shared';
+import { IconBtnBox, ListGroup, pfs, avatarUrl } from './shared';
 import { useAuth } from '../../context/AuthContext';
-import { authApi } from '../../api';
+import { authApi, profileApi } from '../../api';
 
-function initials(name: string): string {
-  return name.split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase();
+function initials(name?: string | null): string {
+  if (!name || typeof name !== 'string') return '??';
+  return name.trim().split(' ').filter(Boolean).slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase() || '??';
 }
 
 /* 11.1 Company Profile */
 export const ProfileScreen: React.FC = () => {
   const nav = useNavigation<any>();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, updateUser } = useAuth();
   const [meLoading, setMeLoading] = React.useState(false);
+  const [kyc, setKyc] = React.useState<{ pending: number; approved: number } | null>(null);
+  const [avatarFailed, setAvatarFailed] = React.useState(false);
+
+  const avatar = avatarUrl(user?.avatar);
 
   React.useEffect(() => {
     setMeLoading(true);
-    authApi.me().catch(() => {}).finally(() => setMeLoading(false));
-  }, []);
+    authApi.me().then(updateUser).catch(() => {}).finally(() => setMeLoading(false));
+    profileApi.kycStatus().then(s => setKyc(s.counts)).catch(() => {});
+  }, [updateUser]);
+
+  // Fall back to initials if the avatar URL fails to load (never show blank).
+  React.useEffect(() => { setAvatarFailed(false); }, [avatar]);
+
+  const kycChip = kyc
+    ? kyc.approved > 0
+      ? { label: 'Verified', variant: 'success' as const }
+      : kyc.pending > 0
+        ? { label: 'Pending', variant: 'warning' as const }
+        : { label: 'Not submitted', variant: 'gray' as const }
+    : null;
 
   if (isLoading || meLoading) {
     return (
@@ -38,14 +55,26 @@ export const ProfileScreen: React.FC = () => {
 
   return (
     <Screen>
-      <Topbar title="Account" onBack={undefined} right={<IconBtnBox name="settings" />} />
+      <Topbar
+        title="Account"
+        onBack={undefined}
+        right={
+          <Pressable onPress={() => nav.navigate('Settings')} hitSlop={8}>
+            <IconBtnBox name="settings" />
+          </Pressable>
+        }
+      />
       <ScreenBody>
         <HeroGradient style={pfs.heroCard}>
           <View style={pfs.editBtn}>
             <Icon name="edit" size={16} color="#fff" />
           </View>
           <View style={pfs.profileAvatar}>
-            <Txt size="xl" weight="bold" color="#fff">{userInitials}</Txt>
+            {avatar && !avatarFailed ? (
+              <Image source={{ uri: avatar }} style={pfs.profileAvatarImg} onError={() => setAvatarFailed(true)} />
+            ) : (
+              <Txt size="xl" weight="bold" color="#fff">{userInitials}</Txt>
+            )}
           </View>
           <Txt size="lg" weight="bold" color="#fff" style={{ marginTop: 12 }}>{displayName}</Txt>
           {companyName ? <Txt style={pfs.heroSub}>{companyName}</Txt> : null}
@@ -61,7 +90,7 @@ export const ProfileScreen: React.FC = () => {
         <Txt size="md" weight="semi" style={{ marginTop: 16, marginBottom: 8 }}>Account</Txt>
         <ListGroup rows={[
           { iconName: 'edit',      label: 'Edit Profile',    bg: colors.primaryLight, fg: colors.primary, onPress: () => nav.navigate('EditProfile') },
-          { iconName: 'file-text', label: 'KYC / Documents', bg: colors.successLight, fg: colors.success, right: <Chip label="Verified" variant="success" /> },
+          { iconName: 'file-text', label: 'KYC / Documents', bg: colors.successLight, fg: colors.success, right: kycChip ? <Chip label={kycChip.label} variant={kycChip.variant} /> : undefined },
           { iconName: 'card',      label: 'Payment Methods', bg: colors.accentLight,  fg: colors.accent },
         ]} />
 

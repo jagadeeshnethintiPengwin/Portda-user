@@ -5,6 +5,7 @@ export interface UpdateProfilePayload {
   name?: string;
   phone?: string;
   email?: string;
+  locale?: string;
   company_name?: string;
   imo_number?: string;
   gst_number?: string;
@@ -16,17 +17,33 @@ export interface UpdateProfilePayload {
   default_port_id?: number;
 }
 
+export interface NotificationPrefs {
+  push: boolean;
+  email: boolean;
+  alerts: boolean;
+}
+
 export const profileApi = {
   get: () => api<User>('/profile'),
 
   update: (data: UpdateProfilePayload) =>
     api<User>('/profile', { method: 'PUT', body: JSON.stringify(data) }),
 
+  // POST /profile/avatar returns { avatar, url } — NOT a full User (api-user.md §4).
   uploadAvatar: (uri: string, name: string, type = 'image/jpeg') => {
     const formData = new FormData();
     formData.append('avatar', { uri, name, type } as any);
-    return api<User>('/profile/avatar', { method: 'POST', body: formData });
+    return api<{ avatar: string; url: string }>('/profile/avatar', { method: 'POST', body: formData });
   },
+
+  getNotificationPrefs: () =>
+    api<NotificationPrefs>('/profile/notification-preferences'),
+
+  updateNotificationPrefs: (prefs: Partial<NotificationPrefs>) =>
+    api<NotificationPrefs>('/profile/notification-preferences', {
+      method: 'PUT',
+      body: JSON.stringify(prefs),
+    }),
 
   kycList: () => api<KycDocument[]>('/kyc'),
 

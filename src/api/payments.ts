@@ -19,16 +19,30 @@ export const paymentsApi = {
 
   get: (id: number | string) => api<Payment>(`/payments/${id}`),
 
+  // Platform bank coordinates + steps for the NEFT/RTGS offline screen.
+  offlineInstructions: () =>
+    api<{
+      bank_name?: string;
+      account_name?: string;
+      account_no?: string;
+      ifsc?: string;
+      branch?: string;
+      steps?: string[];
+      [k: string]: any;
+    }>('/payments/offline-instructions'),
+
   initiate: (order_id: number | string, amount: number, method: string) =>
     api<PaymentInitiateResponse>(
       '/payments/initiate',
       { method: 'POST', body: JSON.stringify({ order_id, amount, method }) },
     ),
 
-  confirm: (id: number | string, gateway_txn_id: string) =>
+  confirm: (id: number | string, gateway_txn_id?: string) =>
     api<Payment>(
       `/payments/${id}/confirm`,
-      { method: 'POST', body: JSON.stringify({ gateway_txn_id }) },
+      gateway_txn_id
+        ? { method: 'POST', body: JSON.stringify({ gateway_txn_id }) }
+        : { method: 'POST' },
     ),
 
   offline: (

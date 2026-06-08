@@ -11,9 +11,11 @@ export interface CreateRequestPayload {
   description?: string;
   service_date?: string;
   service_time?: string;
+  currency?: string;
   budget_min?: number;
   budget_max?: number;
-  urgency?: 'standard' | 'urgent' | 'emergency';
+  urgency?: 'standard' | 'urgent' | 'critical';
+  expires_at?: string;
   attachments?: string[];
 }
 

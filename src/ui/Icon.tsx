@@ -6,7 +6,6 @@ import Svg, {
   Rect,
   Polyline,
   Polygon,
-  G,
 } from 'react-native-svg';
 
 export type IconName =
@@ -26,7 +25,7 @@ export type IconName =
   /* Security */
   | 'lock' | 'key' | 'shield' | 'eye' | 'eye-off'
   /* Files */
-  | 'file' | 'file-text' | 'clipboard' | 'image' | 'mic'
+  | 'file' | 'file-text' | 'clipboard' | 'image' | 'camera' | 'mic'
   /* People */
   | 'user' | 'users' | 'building'
   /* Commerce */
@@ -328,6 +327,13 @@ export const Icon: React.FC<IconProps> = ({
           <Rect x={3} y={3} width={18} height={18} rx={2} {...s} />
           <Circle cx={8.5} cy={8.5} r={1.5} {...s} />
           <Path d="M21 15l-5-5L5 21" {...s} />
+        </>,
+      );
+    case 'camera':
+      return wrap(
+        <>
+          <Path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" {...s} />
+          <Circle cx={12} cy={13} r={4} {...s} />
         </>,
       );
     case 'mic':

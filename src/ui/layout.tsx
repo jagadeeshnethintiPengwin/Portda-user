@@ -68,6 +68,8 @@ export const SearchBar: React.FC<{
   autoFocus?: boolean;
   onPress?: () => void;
   onSubmitEditing?: () => void;
+  /** Size of the leading search glyph (default 18). */
+  iconSize?: number;
 }> = ({
   placeholder = 'Search',
   value,
@@ -77,12 +79,13 @@ export const SearchBar: React.FC<{
   autoFocus,
   onPress,
   onSubmitEditing,
+  iconSize = 18,
 }) => {
   // Show a clear "✕" on editable, controlled bars that have text; otherwise the mic.
   const canClear = !onPress && !!value && !!onChangeText;
   const inner = (
     <View style={styles.searchBar}>
-      <Icon name="search" size={18} color={colors.text3} />
+      <Icon name="search" size={iconSize} color={colors.text3} />
       <TextInput
         style={styles.searchInput}
         placeholder={placeholder}
@@ -168,7 +171,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  searchInput: { flex: 1, fontSize: 16.5, color: colors.text, padding: 0 },
+  searchInput: { flex: 1, fontSize: 14, color: colors.text, padding: 0 },
   fab: {
     position: 'absolute',
     right: 16,

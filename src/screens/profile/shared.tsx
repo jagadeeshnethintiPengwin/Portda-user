@@ -1,7 +1,17 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Card, Row, RowBetween, Txt, IconBox, Icon } from '@ui';
+import { Card, Txt, IconBox, Icon } from '@ui';
 import { colors, fontSize, radius } from '@theme';
+import { BASE_URL } from '../../api';
+
+// Avatars may come back as a full URL (from POST /profile/avatar) or a relative
+// storage path (from GET /profile|/auth/me). Normalize to an absolute URL.
+const MEDIA_ORIGIN = BASE_URL.replace(/\/api\/?$/, '');
+export function avatarUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${MEDIA_ORIGIN}/${path.replace(/^\/+/, '')}`;
+}
 
 export const IconBtnBox: React.FC<{ name: any }> = ({ name }) => (
   <View style={pfs.iconBtn}><Icon name={name} size={18} color={colors.text} /></View>
@@ -35,7 +45,8 @@ export const pfs = StyleSheet.create({
   heroCard: { borderRadius: radius.xl, padding: 14, overflow: 'hidden', position: 'relative' },
   heroSub: { fontSize: fontSize.xs, color: '#fff', opacity: 0.85, marginTop: 4 },
   editBtn: { position: 'absolute', top: 12, right: 12, width: 36, height: 36, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
-  profileAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
+  profileAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  profileAvatarImg: { width: '100%', height: '100%' },
   statStrip: { flexDirection: 'row', gap: 6, marginTop: 12 },
   statCell: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 56, paddingVertical: 10, backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border2 },
   statLabel: { fontSize: 12, color: colors.text2, fontWeight: '600', letterSpacing: 0.5 },
