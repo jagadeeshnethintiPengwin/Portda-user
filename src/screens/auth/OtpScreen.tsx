@@ -51,7 +51,10 @@ export const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
   const input1 = useRef<TextInput>(null);
   const input2 = useRef<TextInput>(null);
   const input3 = useRef<TextInput>(null);
-  const inputRefs = [input0, input1, input2, input3];
+  const inputRefs = useRef([input0, input1, input2, input3]).current;
+  // Synchronous re-entrancy lock — prevents the auto-submit effect and a manual
+  // button tap from both firing verify before `verifying` state has flushed.
+  const submitLock = useRef(false);
 
   /* ── countdown timer ─────────────────────────────────────────── */
 
@@ -98,10 +101,11 @@ export const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
    * never press Back and return to the auth flow.
    */
   const handleVerify = useCallback(async () => {
-    if (verifying) return;
+    if (submitLock.current || verifying) return;
     const code = otp.join('');
     if (code.length < 4) return;
 
+    submitLock.current = true;
     setVerifying(true);
     try {
       const { user, token } = await authApi.verifyOtp(identifier, code);
@@ -115,6 +119,7 @@ export const OtpScreen: React.FC<Props> = ({ navigation, route }) => {
         }),
       );
     } catch (err) {
+      submitLock.current = false;
       setVerifying(false);
       const msg = err instanceof ApiError ? err.message : 'Verification failed. Try again.';
       Alert.alert('Invalid OTP', msg);
@@ -246,7 +251,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     backgroundColor: '#fff',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: font.bold,
     color: colors.primary,
   },

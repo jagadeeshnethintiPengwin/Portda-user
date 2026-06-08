@@ -18,7 +18,7 @@ export const SplashScreen: React.FC = () => {
       if (token) {
         nav.replace('Main');
       } else {
-        nav.replace('LocationPermission');
+        nav.replace('WelcomePitch');
       }
     }, 1800);
     return () => clearTimeout(t);
@@ -29,7 +29,7 @@ export const SplashScreen: React.FC = () => {
       <Screen dark statusBar background="transparent">
         <View style={styles.splashCenter}>
           <View style={styles.brandMarkXl}>
-            <Text style={{ fontSize: 46 }}>⚓</Text>
+            <Text style={{ fontSize: 48 }}>⚓</Text>
           </View>
           <View style={{ alignItems: 'center' }}>
             <Text style={styles.splashTitle}>PORTDA</Text>
@@ -53,8 +53,8 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   splashCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 18, paddingHorizontal: 24 },
   brandMarkXl: { width: 96, height: 96, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-  splashTitle: { fontSize: 42, fontWeight: '900', letterSpacing: -0.8, color: '#fff' },
-  splashSub: { fontSize: 13, opacity: 0.85, letterSpacing: 4, marginTop: 4, color: '#fff' },
+  splashTitle: { fontSize: 44, fontWeight: '900', letterSpacing: -0.8, color: '#fff' },
+  splashSub: { fontSize: 15, opacity: 0.85, letterSpacing: 4, marginTop: 4, color: '#fff' },
   splashFooter: { paddingHorizontal: 24, paddingBottom: 40, alignItems: 'center' },
   dotsRow: { flexDirection: 'row', gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },

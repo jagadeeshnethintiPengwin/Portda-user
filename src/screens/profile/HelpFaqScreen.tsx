@@ -29,7 +29,7 @@ export const HelpFaqScreen: React.FC = () => {
         <Row gap={6} style={{ marginTop: 12 }}>
           {[['≡', 'Orders', colors.primaryLight, colors.primary], ['₹', 'Payments', colors.accentLight, colors.accent], ['📋', 'Requests', colors.successLight, colors.success]].map(([e, l, bg, fg]) => (
             <View key={l} style={pfs.helpCat}>
-              <IconBox size={36} rounded={12} bg={bg}><Text style={{ fontSize: 14, color: fg }}>{e}</Text></IconBox>
+              <IconBox size={36} rounded={12} bg={bg}><Text style={{ fontSize: 16, color: fg }}>{e}</Text></IconBox>
               <Txt size="xs" weight="semi" style={{ marginTop: 4 }}>{l}</Txt>
             </View>
           ))}

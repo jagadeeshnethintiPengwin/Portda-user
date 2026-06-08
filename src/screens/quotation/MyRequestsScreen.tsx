@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, ScreenBody, Topbar, Btn, Card, RowBetween, Txt, Chip, Fab } from '@ui';
 import { colors } from '@theme';
@@ -58,7 +58,8 @@ export const MyRequestsScreen: React.FC = () => {
           requests.map(req => {
             const count = req.quotations_count ?? req.quotations?.length ?? 0;
             return (
-              <Card key={req.id} style={{ marginBottom: 10 }} onTouchEnd={() => nav.navigate('RequestDetails', { requestId: String(req.id) })}>
+              <Pressable key={req.id} onPress={() => nav.navigate('RequestDetails', { requestId: String(req.id) })}>
+              <Card style={{ marginBottom: 10 }}>
                 <RowBetween>
                   <Txt size="xs" color={colors.text2}>#{req.reference} · {req.vessel_name ?? '—'}</Txt>
                   <Chip label={statusLabel(req.status, count)} variant={STATUS_VARIANT[req.status] ?? 'primary'} />
@@ -77,6 +78,7 @@ export const MyRequestsScreen: React.FC = () => {
                   </View>
                 ) : null}
               </Card>
+              </Pressable>
             );
           })
         )}

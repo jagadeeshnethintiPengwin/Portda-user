@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -87,11 +87,11 @@ export const ChatThreadScreen: React.FC<Props> = ({ route }) => {
     <Screen>
       <View style={styles.chatTopbar}>
         <Row gap={8} style={{ flex: 1 }}>
-          <View style={styles.iconBtn} onTouchEnd={() => nav.goBack()}>
+          <Pressable style={styles.iconBtn} onPress={() => nav.goBack()} hitSlop={8}>
             <Icon name="arrow-left" size={18} color={colors.text} />
-          </View>
+          </Pressable>
           <View style={styles.avatarSm}>
-            <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 11 }}>{vendorInitials}</Text>
+            <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 13 }}>{vendorInitials}</Text>
           </View>
           <View>
             <Txt size="sm" weight="semi">{vendorName}</Txt>
@@ -130,12 +130,13 @@ export const ChatThreadScreen: React.FC<Props> = ({ route }) => {
             editable={!sending}
           />
         </View>
-        <View
+        <Pressable
           style={[styles.chatSend, { opacity: text.trim() ? 1 : 0.5 }]}
-          onTouchEnd={handleSend}
+          onPress={handleSend}
+          disabled={!text.trim() || sending}
         >
           <Icon name="send-fill" size={18} color="#fff" />
-        </View>
+        </Pressable>
       </View>
     </Screen>
   );
@@ -152,6 +153,6 @@ const styles = StyleSheet.create({
   chatInput: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingTop: 10, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: 'rgba(15,23,42,0.05)' },
   chatAttach: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.searchBg ?? colors.bg, alignItems: 'center', justifyContent: 'center' },
   chatTextbox: { flex: 1, backgroundColor: colors.searchBg ?? colors.bg, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10 },
-  chatTextInput: { fontSize: 14.5, color: colors.text, padding: 0 },
+  chatTextInput: { fontSize: 16.5, color: colors.text, padding: 0 },
   chatSend: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
 });

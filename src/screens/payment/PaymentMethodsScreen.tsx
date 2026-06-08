@@ -77,8 +77,8 @@ export const PaymentMethodsScreen: React.FC<Props> = ({ route }) => {
 
     setInitiating(true);
     try {
-      await paymentsApi.initiate(orderId, balance, 'razorpay');
-      nav.navigate('Razorpay', { orderId, amount: balance });
+      const result = await paymentsApi.initiate(orderId, balance, 'razorpay');
+      nav.navigate('Razorpay', { orderId, amount: balance, paymentId: String(result.payment.id) });
     } catch (err) {
       setInitiating(false);
       const msg = err instanceof ApiError ? err.message : 'Failed to initiate payment.';
@@ -155,5 +155,5 @@ const styles = StyleSheet.create({
   },
   radioOn: { borderColor: colors.primary },
   radioDot: { width: 9, height: 9, borderRadius: 4.5, backgroundColor: colors.primary },
-  methodIcon: { fontSize: 20 },
+  methodIcon: { fontSize: 22 },
 });

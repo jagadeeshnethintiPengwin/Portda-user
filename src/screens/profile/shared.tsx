@@ -16,7 +16,7 @@ export const ListGroup: React.FC<{ rows: ListRowDef[] }> = ({ rows }) => (
         {i > 0 ? <View style={pfs.sep} /> : null}
         <View style={pfs.listRow} onTouchEnd={r.onPress}>
           <IconBox size={32} rounded={10} bg={r.bg}>
-            {r.iconName ? <Icon name={r.iconName} size={16} color={r.fg} /> : <Text style={{ fontSize: 14, color: r.fg }}>{r.emoji}</Text>}
+            {r.iconName ? <Icon name={r.iconName} size={16} color={r.fg} /> : <Text style={{ fontSize: 16, color: r.fg }}>{r.emoji}</Text>}
           </IconBox>
           <View style={{ flex: 1 }}>
             <Txt size="sm" weight="semi" color={r.danger ? colors.danger : colors.text}>{r.label}</Txt>
@@ -38,12 +38,12 @@ export const pfs = StyleSheet.create({
   profileAvatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
   statStrip: { flexDirection: 'row', gap: 6, marginTop: 12 },
   statCell: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 56, paddingVertical: 10, backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border2 },
-  statLabel: { fontSize: 10, color: colors.text2, fontWeight: '600', letterSpacing: 0.5 },
-  statValue: { fontSize: 14, fontWeight: '700', color: colors.primary },
+  statLabel: { fontSize: 12, color: colors.text2, fontWeight: '600', letterSpacing: 0.5 },
+  statValue: { fontSize: 16, fontWeight: '700', color: colors.primary },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
   sep: { height: 1, backgroundColor: colors.border2, marginHorizontal: 14 },
   avatarLg: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  avatarLgTxt: { color: colors.primary, fontWeight: '700', fontSize: 22 },
+  avatarLgTxt: { color: colors.primary, fontWeight: '700', fontSize: 24 },
   camBadge: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, backgroundColor: colors.primary, borderWidth: 2, borderColor: '#fff', borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   inputWrapVerified: { backgroundColor: '#fff', borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 10 },
   strengthTrack: { height: 6, backgroundColor: colors.bg, borderRadius: 3, marginVertical: 4, overflow: 'hidden' },

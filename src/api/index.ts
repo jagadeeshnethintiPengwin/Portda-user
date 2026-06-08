@@ -19,3 +19,4 @@ export { notificationsApi } from './notifications';
 export { profileApi } from './profile';
 export type { UpdateProfilePayload } from './profile';
 export { reviewsApi } from './reviews';
+export { devicesApi } from './devices';

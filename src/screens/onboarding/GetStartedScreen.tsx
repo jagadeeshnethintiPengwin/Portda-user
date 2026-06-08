@@ -14,7 +14,7 @@ export const GetStartedScreen: React.FC = () => {
       <Screen dark statusBar background="transparent">
         <View style={styles.getStartedBody}>
           <View style={styles.brandMarkXl}>
-            <Text style={{ fontSize: 46 }}>⚓</Text>
+            <Text style={{ fontSize: 48 }}>⚓</Text>
           </View>
           <Text style={styles.getStartedTitle}>Welcome to PORTDA</Text>
           <Text style={styles.getStartedPara}>
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   brandMarkXl: { width: 96, height: 96, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   getStartedBody: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, gap: 16 },
-  getStartedTitle: { fontSize: 28, fontWeight: '900', letterSpacing: -0.6, lineHeight: 32, color: '#fff', textAlign: 'center' },
+  getStartedTitle: { fontSize: 30, fontWeight: '900', letterSpacing: -0.6, lineHeight: 32, color: '#fff', textAlign: 'center' },
   getStartedPara: { fontSize: fontSize.md, opacity: 0.9, lineHeight: 20, maxWidth: 260, color: '#fff', textAlign: 'center' },
   getStartedFooter: { paddingHorizontal: 16, paddingBottom: 24, gap: 10 },
   terms: { fontSize: fontSize.sm, textAlign: 'center', opacity: 0.8, marginTop: 6, color: '#fff' },

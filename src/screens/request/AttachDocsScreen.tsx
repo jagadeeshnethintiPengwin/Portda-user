@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Image, Linking, Modal, Pressable, Text, View } from 'react-native';
+import { Alert, Image, Linking, Modal, PermissionsAndroid, Platform, Pressable, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { launchCamera, launchImageLibrary, type Asset } from 'react-native-image-picker';
 import { pick, types, errorCodes, isErrorWithCode } from '@react-native-documents/picker';
@@ -21,13 +21,23 @@ interface Doc {
 const fmtSize = (b?: number) =>
   !b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`;
 
+// The manifest declares android.permission.CAMERA, so react-native-image-picker
+// requires it to be granted at runtime before launchCamera will open. iOS uses Info.plist.
+const ensureCameraPermission = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') return true;
+  const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CAMERA, {
+    title: 'Camera permission',
+    message: 'Portda needs camera access to take photos of your documents.',
+    buttonPositive: 'Allow',
+    buttonNegative: 'Cancel',
+  });
+  return result === PermissionsAndroid.RESULTS.GRANTED;
+};
+
 /* 4.4 Documents & Photos */
 export const AttachDocsScreen: React.FC = () => {
   const nav = useNavigation<any>();
-  const [docs, setDocs] = useState<Doc[]>([
-    { id: 1, ext: 'PDF', name: 'Vessel_Particulars_SeaTrader.pdf', meta: '428 KB · Uploaded ✓', bg: colors.dangerLight, fg: colors.danger },
-    { id: 2, ext: 'PDF', name: 'Class_Certificate_IRS.pdf', meta: '1.2 MB · Uploaded ✓', bg: colors.dangerLight, fg: colors.danger },
-  ]);
+  const [docs, setDocs] = useState<Doc[]>([]);
   const [preview, setPreview] = useState<string | null>(null);
 
   const addImage = (a: Asset, ext: string, bg: string, fg: string) => {
@@ -40,8 +50,20 @@ export const AttachDocsScreen: React.FC = () => {
 
   // Photo → open the camera
   const onCamera = async () => {
+    const granted = await ensureCameraPermission();
+    if (!granted) {
+      Alert.alert('Camera blocked', 'Enable camera access in Settings to take a photo.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() },
+      ]);
+      return;
+    }
     const res = await launchCamera({ mediaType: 'photo', quality: 0.8, saveToPhotos: false });
-    if (res.didCancel || res.errorCode || !res.assets?.length) return;
+    if (res.didCancel || !res.assets?.length) return;
+    if (res.errorCode) {
+      Alert.alert('Camera error', res.errorMessage ?? 'Could not open the camera. Please try again.');
+      return;
+    }
     addImage(res.assets[0], 'JPG', colors.successLight, colors.success);
   };
 
@@ -100,14 +122,14 @@ export const AttachDocsScreen: React.FC = () => {
                   {d.isImage && d.uri ? (
                     <Image source={{ uri: d.uri }} style={{ width: 36, height: 36, borderRadius: 12 }} />
                   ) : (
-                    <IconBox size={36} rounded={12} bg={d.bg}><Text style={{ fontSize: 14, fontWeight: '900', color: d.fg }}>{d.ext}</Text></IconBox>
+                    <IconBox size={36} rounded={12} bg={d.bg}><Text style={{ fontSize: 16, fontWeight: '900', color: d.fg }}>{d.ext}</Text></IconBox>
                   )}
                   <View style={{ flex: 1 }}>
                     <Txt size="sm" weight="semi" numberOfLines={1}>{d.name}</Txt>
                     <Txt size="xs" color={colors.text2}>{d.meta}</Txt>
                   </View>
                   <Pressable onPress={() => removeDoc(d.id)} hitSlop={10}>
-                    <Text style={{ color: colors.text2, fontSize: 16 }}>✕</Text>
+                    <Text style={{ color: colors.text2, fontSize: 18 }}>✕</Text>
                   </Pressable>
                 </Row>
               </Card>

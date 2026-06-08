@@ -15,7 +15,7 @@ export const AboutScreen: React.FC = () => {
       <Topbar title="About PORTDA" onBack={() => nav.goBack()} />
       <ScreenBody contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
         <View style={{ alignItems: 'center' }}>
-          <View style={sts.brandMarkXl}><Text style={{ fontSize: 44 }}>⚓</Text></View>
+          <View style={sts.brandMarkXl}><Text style={{ fontSize: 46 }}>⚓</Text></View>
           <Txt size="xxl" weight="bold" style={{ marginTop: 8 }}>PORTDA</Txt>
           <Txt size="xs" color={colors.text2} style={{ marginTop: 4, letterSpacing: 2 }}>PORT SERVICES · DIGITISED</Txt>
           <Txt size="xs" color={colors.text2} style={{ marginTop: 4 }}>Version 2.4.0 · Marine Edition</Txt>

@@ -95,25 +95,28 @@ export const QuotationDetailsScreen: React.FC<Props> = ({ route }) => {
         </Card>
       </ScreenBody>
       <BottomCta>
-        <Row gap={8}>
+        <Row gap={10}>
           <Btn
             title="Reject"
-            style={{ flex: 1, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#FECACA' }}
+            left={<Icon name="close-thick" size={16} color={colors.danger} strokeWidth={2.4} />}
+            style={{ flex: 1, backgroundColor: colors.dangerLight, borderWidth: 1.5, borderColor: '#FECACA' }}
             textStyle={{ color: colors.danger }}
             onPress={() => nav.navigate('RejectQuotation', { quotationId: String(quotation.id) })}
           />
           <Btn
             title="Negotiate"
-            variant="outline"
-            style={{ flex: 1 }}
+            left={<Icon name="message-circle" size={16} color={colors.accentDark} strokeWidth={2.2} />}
+            style={{ flex: 1, backgroundColor: colors.accentLight, borderWidth: 1.5, borderColor: '#E7D6AE' }}
+            textStyle={{ color: colors.accentDark }}
             onPress={() => nav.navigate('CounterOffer', { quotationId: String(quotation.id) })}
           />
-          <Btn
-            title="Approve"
-            style={{ flex: 1.4 }}
-            onPress={() => nav.navigate('ApproveQuotation', { quotationId: String(quotation.id) })}
-          />
         </Row>
+        <Btn
+          title="Approve Quotation"
+          left={<Icon name="check" size={18} color="#fff" strokeWidth={2.6} />}
+          style={{ marginTop: 10, minHeight: 50 }}
+          onPress={() => nav.navigate('ApproveQuotation', { quotationId: String(quotation.id) })}
+        />
       </BottomCta>
     </Screen>
   );

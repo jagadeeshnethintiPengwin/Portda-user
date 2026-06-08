@@ -55,7 +55,7 @@ export const DeleteAccountScreen: React.FC = () => {
           <Btn title="Pause account instead" variant="outline" sm style={{ marginTop: 8 }} />
         </Card>
         <Row gap={8} style={{ marginTop: 16 }}>
-          <View style={sts.dangerCheckbox}><Text style={{ color: '#fff', fontSize: 10 }}>✓</Text></View>
+          <View style={sts.dangerCheckbox}><Text style={{ color: '#fff', fontSize: 12 }}>✓</Text></View>
           <Txt size="xs" color={colors.text2} style={{ flex: 1 }}>I am authorised by the company and understand this action is permanent</Txt>
         </Row>
       </ScreenBody>

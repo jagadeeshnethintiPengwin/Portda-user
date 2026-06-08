@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, ImgPh, Divider, HeroGradient } from '@ui';
@@ -107,7 +107,9 @@ export const OrderDetailsScreen: React.FC<Props> = ({ route }) => {
             </View>
             <Row gap={4}>
               <IconBtnBox name="phone" />
-              <IconBtnBox name="chat" onPress={() => nav.navigate('ChatThread', { threadId: String(order.id), vendorName })} />
+              <TouchableOpacity onPress={() => nav.navigate('ChatThread', { threadId: String(order.id), vendorName })}>
+                <IconBtnBox name="chat" />
+              </TouchableOpacity>
             </Row>
           </Row>
         </Card>
@@ -149,7 +151,7 @@ export const OrderDetailsScreen: React.FC<Props> = ({ route }) => {
             title="Leave a Review"
             variant="outline"
             style={{ marginTop: 12 }}
-            onPress={() => nav.navigate('WriteReview', { vendorId: String(order.vendor_profile_id), rating: 5 })}
+            onPress={() => nav.navigate('RateVendor', { vendorId: String(order.vendor_profile_id), orderId: String(order.id) })}
           />
         ) : null}
       </ScreenBody>

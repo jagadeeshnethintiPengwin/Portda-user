@@ -60,7 +60,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
           onChange={setTab}
           style={{ marginBottom: 16 }}
           tabStyle={{ paddingVertical: 14 }}
-          textStyle={{ fontSize: 16 }}
+          textStyle={{ fontSize: 18 }}
         />
 
         {tab === 0 ? (

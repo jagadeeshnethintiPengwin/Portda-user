@@ -111,6 +111,6 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 4,
   },
   iconWrap: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: 10, fontWeight: font.medium, color: colors.tabIdle },
+  label: { fontSize: 12, fontWeight: font.medium, color: colors.tabIdle },
   labelActive: { color: colors.primary, fontWeight: font.bold },
 });

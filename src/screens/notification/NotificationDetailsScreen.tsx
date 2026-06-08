@@ -1,72 +1,110 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, IconBox, Icon, ImgPh, HeroGradient } from '@ui';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, Txt, IconBox, Icon, HeroGradient } from '@ui';
 import { colors } from '@theme';
 import { ns } from './shared';
+import { notificationsApi } from '../../api';
+import type { RootStackParamList } from '@navigation/types';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'NotificationDetails'>;
+
+function iconForType(type?: string): React.ReactNode {
+  const map: Record<string, string> = {
+    'quotation.received': 'file-text',
+    'order.started': 'clock',
+    'order.completed': 'check-circle',
+    'order.cancelled': 'close-thick',
+    'payment.received': 'card',
+    'chat.message': 'chat',
+    'kyc.update': 'shield',
+  };
+  const name = (map[type ?? ''] ?? 'bell') as any;
+  return <Icon name={name} size={20} color="#fff" strokeWidth={1.8} />;
+}
 
 /* 10.2 Notification Details */
-export const NotificationDetailsScreen: React.FC = () => {
+export const NotificationDetailsScreen: React.FC<Props> = ({ route }) => {
   const nav = useNavigation<any>();
+  const { notificationId, title, body, notificationType, refId } = route.params;
+
+  React.useEffect(() => {
+    notificationsApi.markRead(notificationId).catch(() => {});
+  }, [notificationId]);
+
+  const displayTitle = title ?? 'Notification';
+  const displayBody = body ?? 'No additional details.';
+
+  const handlePrimaryAction = () => {
+    switch (notificationType) {
+      case 'quotation.received':
+        if (refId) nav.navigate('QuotationDetails', { quotationId: refId });
+        else nav.navigate('Main', { screen: 'Requests' });
+        break;
+      case 'order.started':
+      case 'order.completed':
+      case 'order.cancelled':
+        if (refId) nav.navigate('OrderDetails', { orderId: refId });
+        else nav.navigate('Main', { screen: 'Orders' });
+        break;
+      case 'chat.message':
+        nav.navigate('Main', { screen: 'Chat' });
+        break;
+      case 'payment.received':
+        nav.navigate('TransactionHistory', undefined);
+        break;
+      default:
+        nav.navigate('Notifications', undefined);
+        break;
+    }
+  };
+
   return (
     <Screen>
-      <Topbar title="Notification" onBack={() => nav.goBack()} right={<View style={ns.iconBtn}><Icon name="more-vertical" size={18} color={colors.text} /></View>} />
+      <Topbar
+        title="Notification"
+        onBack={() => nav.goBack()}
+        right={
+          <View style={ns.iconBtn}>
+            <Icon name="more-vertical" size={18} color={colors.text} />
+          </View>
+        }
+      />
       <ScreenBody>
         <HeroGradient style={ns.heroCard}>
           <Row gap={10}>
-            <IconBox size={48} rounded={12} bg="rgba(255,255,255,0.2)"><Icon name="anchor" size={20} color="#fff" strokeWidth={1.8} /></IconBox>
+            <IconBox size={48} rounded={12} bg="rgba(255,255,255,0.2)">
+              {iconForType(notificationType)}
+            </IconBox>
             <View style={{ flex: 1 }}>
-              <Text style={ns.heroKicker}>PORT AUTHORITY</Text>
-              <Txt size="md" weight="bold" color="#fff" style={{ marginTop: 4 }}>Berth T4 allocated</Txt>
-              <Text style={ns.heroSub}>2 minutes ago · JNPT</Text>
+              <Txt size="xs" color="rgba(255,255,255,0.7)" weight="semi" style={{ textTransform: 'uppercase' }}>
+                {notificationType?.replace('.', ' ') ?? 'NOTIFICATION'}
+              </Txt>
+              <Txt size="md" weight="bold" color="#fff" style={{ marginTop: 4 }}>{displayTitle}</Txt>
             </View>
           </Row>
         </HeroGradient>
 
         <Card style={{ marginTop: 12 }}>
           <Txt size="xs" color={colors.text2} weight="semi" style={{ marginBottom: 8 }}>DETAILS</Txt>
-          <Txt size="sm" style={{ lineHeight: 21 }}>
-            JNPT Marine Operations has allocated <Txt size="sm" weight="bold">Berth T4</Txt> for <Txt size="sm" weight="bold">MV Sea Trader</Txt> at <Txt size="sm" weight="bold">14:00 IST</Txt> on 15 May 2026. Please ensure pilot boarding and tug services are in place.
-          </Txt>
+          <Txt size="sm" style={{ lineHeight: 21 }}>{displayBody}</Txt>
         </Card>
 
-        <Card style={{ marginTop: 10 }}>
-          <Row gap={10}>
-            <ImgPh label="🚢" height={48} rounded={12} style={{ width: 48 }} />
-            <View style={{ flex: 1 }}>
-              <Txt size="sm" weight="semi">MV Sea Trader</Txt>
-              <Txt size="xs" color={colors.text2}>IMO 9412358 · LOA 294m · Draft 11.4m</Txt>
-            </View>
-          </Row>
-        </Card>
-
-        <Card style={{ marginTop: 10 }}>
-          <Txt size="xs" color={colors.text2} weight="semi" style={{ marginBottom: 8 }}>BERTH INFO</Txt>
-          {[
-            ['Terminal', 'T4 (BMCT)'],
-            ['Length', '330 m'],
-            ['Depth', '14.5 m'],
-            ['Slot', '15 May, 14:00–17:00 IST'],
-          ].map(([k, v], i) => (
-            <RowBetween key={k} style={i ? { marginTop: 4 } : undefined}>
-              <Txt size="xs" color={colors.text2}>{k}</Txt>
-              <Txt size="xs" weight="semi">{v}</Txt>
-            </RowBetween>
-          ))}
-        </Card>
-
-        <Card style={{ marginTop: 10, backgroundColor: colors.bg, borderWidth: 0 }}>
-          <Row gap={10}>
-            <Text style={{ color: colors.warning }}>⚠</Text>
-            <Txt size="xs" color={colors.text2} style={{ flex: 1 }}>Berth ETA may shift ±30 min based on tide and prior vessel departure</Txt>
-          </Row>
-        </Card>
+        {notificationType === 'kyc.update' ? (
+          <Card style={{ marginTop: 10, backgroundColor: colors.warningLight, borderWidth: 0 }}>
+            <Row gap={10}>
+              <Icon name="shield" size={18} color={colors.warning} />
+              <Txt size="xs" color={colors.warning} style={{ flex: 1 }}>
+                Your KYC document status has been updated. Check the profile section for details.
+              </Txt>
+            </Row>
+          </Card>
+        ) : null}
       </ScreenBody>
       <BottomCta>
-        <Row gap={8}>
-          <Btn title="View Order"        variant="outline" style={{ flex: 1 }} onPress={() => nav.navigate('OrderDetails')} />
-          <Btn title="Confirm Schedule" style={{ flex: 1 }} onPress={() => nav.navigate('OrderStatus')} />
-        </Row>
+        <Btn title="View Details" onPress={handlePrimaryAction} />
+        <Btn title="Dismiss" variant="ghost" onPress={() => nav.goBack()} />
       </BottomCta>
     </Screen>
   );

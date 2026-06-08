@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TOKEN_KEY } from '../api/client';
+import { authApi } from '../api/auth';
 import type { User } from '../api/types';
 
 interface AuthState {
@@ -34,7 +35,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     AsyncStorage.getItem(TOKEN_KEY)
-      .then(token => setState(s => ({ ...s, token, isLoading: false })))
+      .then(async token => {
+        if (!token) {
+          setState(s => ({ ...s, isLoading: false }));
+          return;
+        }
+        try {
+          const user = await authApi.me();
+          setState({ token, user, isLoading: false });
+        } catch {
+          await AsyncStorage.removeItem(TOKEN_KEY);
+          setState({ token: null, user: null, isLoading: false });
+        }
+      })
       .catch(() => setState(s => ({ ...s, isLoading: false })));
   }, []);
 

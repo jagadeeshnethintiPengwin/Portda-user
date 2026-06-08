@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
 
   /* Dial code */
   dialCode: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
     paddingRight: 8,

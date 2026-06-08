@@ -20,7 +20,7 @@ const Milestone: React.FC<{ n: string; title: string; sub: string; amount: strin
     <RowBetween>
       <Row gap={10}>
         <View style={[qs.msNum, active && { backgroundColor: colors.primary, borderWidth: 0 }]}>
-          <Text style={{ fontSize: 11, fontWeight: '700', color: active ? '#fff' : colors.text2 }}>{n}</Text>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#fff' : colors.text2 }}>{n}</Text>
         </View>
         <View>
           <Txt size="sm" weight="semi">{title}</Txt>
@@ -57,7 +57,16 @@ export const ApproveQuotationScreen: React.FC<Props> = ({ route }) => {
     setAccepting(true);
     try {
       const order = await quotationsApi.accept(quotationId);
-      nav.navigate('PaymentMethods', { orderId: String(order.id) });
+      // Contract: after accept, route straight to the order detail (the quotation
+      // is decided — don't return to the quotations list). The "Pay now" CTA there
+      // is gated on payment_status === 'pending'. Back lands on the Orders tab.
+      nav.reset({
+        index: 1,
+        routes: [
+          { name: 'Main', params: { screen: 'Orders' } },
+          { name: 'OrderDetails', params: { orderId: String(order.id) } },
+        ],
+      });
     } catch (err) {
       setAccepting(false);
       const msg = err instanceof ApiError ? err.message : 'Failed to approve quotation.';
@@ -119,7 +128,7 @@ export const ApproveQuotationScreen: React.FC<Props> = ({ route }) => {
         </Card>
 
         <Row gap={10} style={{ marginTop: 16, alignItems: 'flex-start' }}>
-          <View style={qs.checkboxOn}><Text style={{ color: '#fff', fontSize: 11 }}>✓</Text></View>
+          <View style={qs.checkboxOn}><Text style={{ color: '#fff', fontSize: 13 }}>✓</Text></View>
           <Txt size="xs" color={colors.text2} style={{ flex: 1, lineHeight: 18 }}>
             I confirm the scope, schedule and pricing and accept the{' '}
             <Txt size="xs" color={colors.primary} weight="semi">PORTDA terms of service</Txt>.

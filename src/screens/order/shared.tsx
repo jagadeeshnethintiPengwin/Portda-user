@@ -35,7 +35,7 @@ export const os = StyleSheet.create({
   windowCard: { width: '47.5%', alignItems: 'center', paddingVertical: 14, backgroundColor: '#fff', borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border2 },
   windowCardActive: { borderWidth: 1.5, borderColor: colors.primary, backgroundColor: colors.primaryLight },
   calRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  calCell: { flex: 1, textAlign: 'center', fontSize: 10, paddingVertical: 6, color: colors.text },
+  calCell: { flex: 1, textAlign: 'center', fontSize: 12, paddingVertical: 6, color: colors.text },
   calDayWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
   calDaySel: { backgroundColor: colors.primary },
 });

@@ -62,7 +62,7 @@ export const MyOrdersScreen: React.FC = () => {
                 </RowBetween>
                 <Row gap={10} style={{ marginTop: 8 }}>
                   <LinearGradient colors={AVATAR_TONE[tone].g} style={os.orderAvatar}>
-                    <Text style={{ color: AVATAR_TONE[tone].fg, fontWeight: '800', fontSize: 14 }}>
+                    <Text style={{ color: AVATAR_TONE[tone].fg, fontWeight: '800', fontSize: 16 }}>
                       {vendorInitials}
                     </Text>
                   </LinearGradient>

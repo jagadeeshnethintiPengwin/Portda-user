@@ -18,7 +18,7 @@ export const RequestSuccessScreen: React.FC<Props> = ({ route }) => {
     <Screen>
       <View style={rs.successBody}>
         <IconBox size={96} rounded={24} bg={colors.successLight}>
-          <Text style={{ fontSize: 48, color: colors.success }}>✓</Text>
+          <Text style={{ fontSize: 50, color: colors.success }}>✓</Text>
         </IconBox>
         <Txt size="xxl" weight="bold">Request submitted!</Txt>
         <Txt size="md" color={colors.text2} center style={{ lineHeight: 21 }}>
@@ -35,7 +35,7 @@ export const RequestSuccessScreen: React.FC<Props> = ({ route }) => {
           {['Vendors review & send quotations', 'Compare bids & approve a vendor', 'Track service against vessel ETA'].map((t, i) => (
             <Row key={t} gap={10} style={{ marginTop: 8 }}>
               <IconBox size={28} rounded={14} bg={colors.primaryLight}>
-                <Text style={{ fontSize: 13, color: colors.primary }}>{i + 1}</Text>
+                <Text style={{ fontSize: 15, color: colors.primary }}>{i + 1}</Text>
               </IconBox>
               <Txt size="sm">{t}</Txt>
             </Row>

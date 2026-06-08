@@ -1,9 +1,9 @@
 import React from 'react';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import LinearGradient from 'react-native-linear-gradient';
-import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, Txt, InputWrap } from '@ui';
+import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, Txt, TextField } from '@ui';
 import { colors, fontSize } from '@theme';
 import { os } from './shared';
 import { ordersApi, ApiError } from '../../api';
@@ -19,10 +19,10 @@ const REASONS = [
 ];
 
 const RadioRow: React.FC<{ label: string; on?: boolean; onPress: () => void }> = ({ label, on, onPress }) => (
-  <View style={[os.radioCard, on && os.radioCardActive]} onTouchEnd={onPress}>
+  <Pressable style={[os.radioCard, on && os.radioCardActive]} onPress={onPress}>
     <View style={[os.radio, on && { borderColor: colors.primary }]}>{on ? <View style={os.radioDot} /> : null}</View>
     <Txt size="sm">{label}</Txt>
-  </View>
+  </Pressable>
 );
 
 /* 7.6 Cancel Order */
@@ -54,7 +54,7 @@ export const CancelOrderScreen: React.FC<Props> = ({ route }) => {
         <Card style={{ marginTop: 2 }}>
           <Row gap={10}>
             <LinearGradient colors={['#FEF3C7', '#FDE68A']} style={[os.orderAvatar, { width: 48, height: 48 }]}>
-              <Text style={{ color: '#B45309', fontWeight: '800', fontSize: 14 }}>??</Text>
+              <Text style={{ color: '#B45309', fontWeight: '800', fontSize: 16 }}>??</Text>
             </LinearGradient>
             <View style={{ flex: 1 }}>
               <Txt size="sm" weight="semi">Order #{orderId}</Txt>
@@ -76,12 +76,13 @@ export const CancelOrderScreen: React.FC<Props> = ({ route }) => {
             <RadioRow key={r} label={r} on={i === selected} onPress={() => setSelected(i)} />
           ))}
         </View>
-        <InputWrap
+        <TextField
           label="Additional details (optional)"
           placeholder="e.g., ETA delayed by 12h"
           value={details}
           onChangeText={setDetails}
-          style={{ marginTop: 12, minHeight: 60 }}
+          style={{ marginTop: 12 }}
+          multiline
         />
       </ScreenBody>
       <BottomCta>

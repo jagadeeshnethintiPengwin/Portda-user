@@ -135,14 +135,14 @@ export const font = {
 
 // Text size scale from styles.css utility classes.
 export const fontSize = {
-  xs: 10,
-  sm: 11,
-  base: 13,
-  md: 14,
-  lg: 15,
-  xl: 18,
-  xxl: 22,
-  xxxl: 28,
+  xs: 12,
+  sm: 13,
+  base: 15,
+  md: 16,
+  lg: 17,
+  xl: 20,
+  xxl: 24,
+  xxxl: 30,
 } as const;
 
 export type ChipTone =

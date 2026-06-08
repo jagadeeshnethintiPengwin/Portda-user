@@ -4,6 +4,7 @@ import type { User, KycDocument } from './types';
 export interface UpdateProfilePayload {
   name?: string;
   phone?: string;
+  email?: string;
   company_name?: string;
   imo_number?: string;
   gst_number?: string;

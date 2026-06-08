@@ -41,7 +41,7 @@ export type IconName =
   | 'tool' | 'briefcase'
   /* Misc */
   | 'toggle-right' | 'refresh'
-  | 'mail';
+  | 'mail' | 'droplet';
 
 interface IconProps {
   name: IconName;
@@ -559,6 +559,10 @@ export const Icon: React.FC<IconProps> = ({
           <Path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" {...s} />
           <Polyline points="22 6 12 13 2 6" {...s} />
         </>,
+      );
+    case 'droplet':
+      return wrap(
+        <Path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" {...s} />,
       );
 
     default:

@@ -1,40 +1,30 @@
-import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, ScreenBody, Row, RowBetween, Txt, Chip, IconBox, SearchBar, Icon } from '@ui';
 import { colors, radius } from '@theme';
+import { vendorsApi } from '../../api';
+import type { VendorProfile } from '../../api';
 
-interface ServiceItem {
-  emoji: string;
-  title: string;
-  sub: string;
-  bg: string;
-}
-
-const SERVICES: ServiceItem[] = [
-  { emoji: '⛽', title: 'Bunker Supply (VLSFO/MGO)', sub: 'Fuel & Lubes · 18 suppliers', bg: colors.primaryLight },
-  { emoji: '⚒', title: 'Bunker Barge Booking', sub: 'Logistics · 7 operators', bg: colors.accentLight },
-  { emoji: '📋', title: 'Bunker Survey', sub: 'Survey · 24 surveyors', bg: colors.successLight },
-  { emoji: '⚓', title: 'Pilotage & Berthing', sub: 'Marine Ops · 12 vendors', bg: colors.primaryLight },
-  { emoji: '🛟', title: 'Tug Assist', sub: 'Towage · 9 operators', bg: colors.warningLight },
-  { emoji: '🤿', title: 'Hull Cleaning Divers', sub: 'Survey · 6 dive teams', bg: colors.successLight },
-  { emoji: '🗑', title: 'Garbage Disposal', sub: 'Waste Mgmt · 14 vendors', bg: colors.accentLight },
-  { emoji: '🧑‍✈️', title: 'Crew Change', sub: 'Crewing · 11 agents', bg: colors.primaryLight },
-  { emoji: '🛡', title: 'P&I Surveyor (JNPT)', sub: 'Survey · 8 surveyors', bg: colors.successLight },
-];
-
-const TRENDING = ['Pilot booking', 'Tug assist', 'Garbage disposal', 'Crew change'];
+const TRENDING = ['Bunkering', 'Pilotage', 'Stevedores', 'Ship Chandlers'];
 const INITIAL_RECENT = ['VLSFO bunker supply', 'P&I surveyor JNPT', 'Hull cleaning divers'];
 
-/** Tappable service row used for both search results and suggestions. */
-const ServiceRow: React.FC<{ item: ServiceItem; onPress: () => void }> = ({ item, onPress }) => (
+function initials(name: string | null | undefined): string {
+  if (!name) return '?';
+  return name.trim().split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase() || '?';
+}
+
+/** Tappable vendor row used for search results and suggestions. */
+const VendorRow: React.FC<{ vendor: VendorProfile; onPress: () => void }> = ({ vendor, onPress }) => (
   <Pressable style={styles.listItem} onPress={onPress} android_ripple={{ color: colors.border2 }}>
-    <IconBox size={44} rounded={12} bg={item.bg}>
-      <Text style={{ fontSize: 16 }}>{item.emoji}</Text>
+    <IconBox size={44} rounded={12} bg={colors.primaryLight}>
+      <Text style={{ fontSize: 15, fontWeight: '800', color: colors.primary }}>{initials(vendor.company_name)}</Text>
     </IconBox>
     <View style={{ flex: 1 }}>
-      <Txt size="md" weight="semi">{item.title}</Txt>
-      <Txt size="xs" color={colors.text2}>{item.sub}</Txt>
+      <Txt size="md" weight="semi" numberOfLines={1}>{vendor.company_name ?? 'Vendor'}</Txt>
+      <Txt size="xs" color={colors.text2} numberOfLines={1}>
+        {vendor.rating != null ? `★ ${Number(vendor.rating).toFixed(1)} · ` : ''}{vendor.jobs_completed ?? 0} jobs
+      </Txt>
     </View>
     <Icon name="chevron-right" size={16} color={colors.text3} />
   </Pressable>
@@ -45,26 +35,43 @@ export const SearchScreen: React.FC = () => {
   const nav = useNavigation<any>();
   const [query, setQuery] = useState('');
   const [recent, setRecent] = useState<string[]>(INITIAL_RECENT);
+  const [results, setResults] = useState<VendorProfile[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [suggested, setSuggested] = useState<VendorProfile[]>([]);
 
-  const q = query.trim().toLowerCase();
-  const results = useMemo(
-    () => (q ? SERVICES.filter(s => `${s.title} ${s.sub}`.toLowerCase().includes(q)) : []),
-    [q],
-  );
+  const q = query.trim();
+
+  /* Load a few top vendors once for the empty-state suggestions. */
+  useEffect(() => {
+    vendorsApi.list().then(v => setSuggested(Array.isArray(v) ? v.slice(0, 3) : [])).catch(() => {});
+  }, []);
+
+  /* Live vendor search (debounced) as the user types. */
+  useEffect(() => {
+    if (q.length < 2) { setResults([]); setSearching(false); return; }
+    setSearching(true);
+    const t = setTimeout(() => {
+      vendorsApi.list({ q })
+        .then(v => setResults(Array.isArray(v) ? v : []))
+        .catch(() => setResults([]))
+        .finally(() => setSearching(false));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const remember = (term: string) =>
     setRecent(prev => [term, ...prev.filter(r => r.toLowerCase() !== term.toLowerCase())].slice(0, 5));
 
-  const openService = (item: ServiceItem) => {
-    remember(item.title);
-    nav.navigate('Main', { screen: 'Vendors' });
+  const openVendor = (vendor: VendorProfile) => {
+    remember(vendor.company_name ?? '');
+    nav.navigate('VendorProfile', { vendorId: String(vendor.id) });
   };
 
   const submitQuery = () => {
     const term = query.trim();
     if (!term) return;
     remember(term);
-    nav.navigate('Main', { screen: 'Vendors' });
+    nav.navigate('Main', { screen: 'Vendors', params: { q: term } });
   };
 
   return (
@@ -89,21 +96,23 @@ export const SearchScreen: React.FC = () => {
 
       <ScreenBody contentContainerStyle={{ paddingTop: 14, paddingHorizontal: 16, paddingBottom: 16 }}>
         {q ? (
-          results.length > 0 ? (
+          searching ? (
+            <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
+          ) : results.length > 0 ? (
             <>
               <Txt size="sm" color={colors.text2} weight="semi" style={{ marginBottom: 8 }}>
-                {results.length} RESULT{results.length === 1 ? '' : 'S'}
+                {results.length} VENDOR{results.length === 1 ? '' : 'S'}
               </Txt>
-              {results.map(item => (
-                <ServiceRow key={item.title} item={item} onPress={() => openService(item)} />
+              {results.map(v => (
+                <VendorRow key={v.id} vendor={v} onPress={() => openVendor(v)} />
               ))}
             </>
           ) : (
             <View style={styles.empty}>
-              <Text style={{ fontSize: 44 }}>🔍</Text>
-              <Txt size="md" weight="semi" center style={{ marginTop: 12 }}>No results for “{query.trim()}”</Txt>
+              <Text style={{ fontSize: 46 }}>🔍</Text>
+              <Txt size="md" weight="semi" center style={{ marginTop: 12 }}>No results for “{q}”</Txt>
               <Txt size="sm" color={colors.text2} center style={{ marginTop: 4, lineHeight: 19 }}>
-                Try another service name, or pick from trending searches.
+                Try another service or vendor name, or pick from trending searches.
               </Txt>
             </View>
           )
@@ -125,10 +134,14 @@ export const SearchScreen: React.FC = () => {
               </>
             ) : null}
 
-            <Txt size="sm" color={colors.text2} weight="semi" style={{ marginTop: 16, marginBottom: 8 }}>SUGGESTED</Txt>
-            {SERVICES.slice(0, 3).map(item => (
-              <ServiceRow key={item.title} item={item} onPress={() => openService(item)} />
-            ))}
+            {suggested.length > 0 ? (
+              <>
+                <Txt size="sm" color={colors.text2} weight="semi" style={{ marginTop: 16, marginBottom: 8 }}>SUGGESTED VENDORS</Txt>
+                {suggested.map(v => (
+                  <VendorRow key={v.id} vendor={v} onPress={() => openVendor(v)} />
+                ))}
+              </>
+            ) : null}
 
             <Txt size="sm" color={colors.text2} weight="semi" style={{ marginTop: 16, marginBottom: 8 }}>TRENDING</Txt>
             <Row gap={6} style={{ flexWrap: 'wrap' }}>
@@ -149,6 +162,6 @@ const styles = StyleSheet.create({
   searchHeader: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#fff' },
   iconBtn: { width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   listItem: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border2, marginTop: 8 },
-  fillArrow: { color: colors.text2, fontSize: 16 },
+  fillArrow: { color: colors.text2, fontSize: 18 },
   empty: { alignItems: 'center', paddingTop: 48, paddingHorizontal: 24 },
 });

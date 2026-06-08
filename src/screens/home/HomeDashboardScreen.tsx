@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
@@ -10,23 +10,13 @@ import { colors, fontSize, gradients, radius } from '@theme';
 import { dashboardApi } from '../../api';
 import type { Dashboard } from '../../api';
 import { useAuth } from '../../context/AuthContext';
-import type { IconName } from '@ui/Icon';
+import { PORT_SERVICES } from '../../data/portServices';
+import type { PortServiceCategory } from '../../data/portServices';
 
-/* ── Category tile data ─────────────────────────────────── */
-interface CatTile { icon: IconName; label: string; bg: string; fg: string; }
+const { width: SCREEN_W } = Dimensions.get('window');
+const TILE_GAP = 10;
+const TILE_W = Math.floor((SCREEN_W - 32 - TILE_GAP * 2) / 3); // 32 = 16px padding × 2
 
-const PORT_TILES: CatTile[] = [
-  { icon: 'anchor',    label: 'Berthing', bg: colors.primaryLight, fg: colors.primary },
-  { icon: 'ship',      label: 'Pilot',    bg: colors.accentLight,  fg: colors.accent  },
-  { icon: 'fuel',      label: 'Bunker',   bg: colors.successLight, fg: colors.success },
-  { icon: 'life-buoy', label: 'Tug',      bg: colors.warningLight, fg: colors.warning },
-  { icon: 'package',   label: 'Cargo',    bg: colors.primaryLight, fg: colors.primary },
-  { icon: 'tool',      label: 'Repair',   bg: colors.accentLight,  fg: colors.accent  },
-  { icon: 'clipboard', label: 'Survey',   bg: colors.successLight, fg: colors.success },
-  { icon: 'grid',      label: 'More',     bg: colors.dangerLight,  fg: colors.danger  },
-];
-
-/* ── Sub-components ─────────────────────────────────────── */
 const LocationPill: React.FC = () => (
   <Row gap={8} style={{ alignSelf: 'flex-start' }}>
     <IconBox size={28} rounded={8} bg={colors.primaryLight}>
@@ -42,10 +32,10 @@ const LocationPill: React.FC = () => (
   </Row>
 );
 
-const CatTileView: React.FC<{ tile: CatTile; onPress?: () => void }> = ({ tile, onPress }) => (
+const CatTileView: React.FC<{ tile: PortServiceCategory; onPress?: () => void }> = ({ tile, onPress }) => (
   <TouchableOpacity style={styles.catTile} onPress={onPress} activeOpacity={0.75}>
-    <IconBox size={40} rounded={12} bg={tile.bg}>
-      <Icon name={tile.icon} size={20} color={tile.fg} strokeWidth={1.8} />
+    <IconBox size={44} rounded={12} bg={tile.bg}>
+      <Icon name={tile.icon} size={22} color={tile.fg} strokeWidth={1.8} />
     </IconBox>
     <Txt size="xs" weight="semi" color={colors.text} style={styles.catLabel}>{tile.label}</Txt>
   </TouchableOpacity>
@@ -61,7 +51,6 @@ function initials(name: string): string {
   return name.split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase();
 }
 
-/* ── Main screen ────────────────────────────────────────── */
 export const HomeDashboardScreen: React.FC = () => {
   const nav = useNavigation<any>();
   const { user } = useAuth();
@@ -77,7 +66,6 @@ export const HomeDashboardScreen: React.FC = () => {
 
   return (
     <Screen>
-      {/* ── Header ── */}
       <View style={styles.header}>
         <RowBetween style={{ marginBottom: 10 }}>
           <Row gap={8}>
@@ -98,7 +86,7 @@ export const HomeDashboardScreen: React.FC = () => {
         <LocationPill />
         <View style={{ marginTop: 12 }}>
           <SearchBar
-            placeholder="Search 'pilot', 'bunker', 'survey'..."
+            placeholder="Search services, vendors, ports..."
             mic={false}
             editable={false}
             onPress={() => nav.navigate('Search')}
@@ -106,7 +94,6 @@ export const HomeDashboardScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* ── Body ── */}
       <ScreenBody
         style={{ backgroundColor: colors.bg }}
         contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 16, paddingBottom: 16 }}
@@ -115,7 +102,6 @@ export const HomeDashboardScreen: React.FC = () => {
           <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
         ) : (
           <>
-            {/* Active order banner */}
             {activeOrder ? (
               <TouchableOpacity
                 activeOpacity={0.9}
@@ -140,7 +126,6 @@ export const HomeDashboardScreen: React.FC = () => {
               </TouchableOpacity>
             ) : null}
 
-            {/* Stat strip */}
             <View style={styles.statStrip}>
               {([
                 { label: 'ACTIVE',  value: String(data?.pending_orders ?? 0) + ' orders', color: colors.primary, onPress: () => nav.navigate('Main', { screen: 'Orders' }) },
@@ -156,22 +141,20 @@ export const HomeDashboardScreen: React.FC = () => {
           </>
         )}
 
-        {/* Port services */}
         <RowBetween style={{ marginTop: 16, marginBottom: 8 }}>
           <Txt size="md" weight="semi">Port Services</Txt>
           <Txt size="sm" color={colors.primary} weight="semi" onPress={() => nav.navigate('Categories')}>View all</Txt>
         </RowBetween>
-        <View style={styles.grid4}>
-          {PORT_TILES.map(t => (
+        <View style={styles.grid3}>
+          {PORT_SERVICES.map(s => (
             <CatTileView
-              key={t.label}
-              tile={t}
-              onPress={() => nav.navigate(t.label === 'More' ? 'Categories' : 'CreateRequest')}
+              key={s.id}
+              tile={s}
+              onPress={() => nav.navigate('CreateRequest', { serviceId: s.id, serviceName: s.fullName })}
             />
           ))}
         </View>
 
-        {/* Top vendors */}
         <RowBetween style={{ marginTop: 16, marginBottom: 8 }}>
           <Txt size="md" weight="semi">Top vendors near you</Txt>
           <Txt size="sm" color={colors.primary} weight="semi" onPress={() => nav.navigate('Main', { screen: 'Vendors' })}>See all</Txt>
@@ -212,7 +195,6 @@ export const HomeDashboardScreen: React.FC = () => {
   );
 };
 
-/* ── Styles ─────────────────────────────────────────────── */
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14, backgroundColor: '#fff' },
   logoMark: { width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
@@ -224,9 +206,9 @@ const styles = StyleSheet.create({
   statStrip: { flexDirection: 'row', gap: 6, marginTop: 12 },
   statCell: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 56, paddingVertical: 10, backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border2 },
   statLabel: { letterSpacing: 0.5 },
-  grid4: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8, justifyContent: 'space-between' },
-  catTile: { width: '23%', alignItems: 'center', gap: 6, paddingVertical: 12, paddingHorizontal: 4, minHeight: 88, backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border2 },
-  catLabel: { textAlign: 'center', lineHeight: 14 },
+  grid3: { flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP },
+  catTile: { width: TILE_W, alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 8, backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border2 },
+  catLabel: { textAlign: 'center', lineHeight: 16 },
   vendorCard: { backgroundColor: '#fff', borderRadius: radius.xl, overflow: 'hidden', borderWidth: 1, borderColor: colors.border2 },
   vendorBanner: { height: 90, alignItems: 'center', justifyContent: 'center' },
 });

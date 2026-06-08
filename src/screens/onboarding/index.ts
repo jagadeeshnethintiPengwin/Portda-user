@@ -1,4 +1,4 @@
 export * from './SplashScreen';
-export * from './LocationPermissionScreen';
+export * from './WelcomePitchScreen';
 export * from './NotificationPermissionScreen';
 export * from './GetStartedScreen';

@@ -31,7 +31,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Requests: undefined;
-  Vendors: undefined;
+  Vendors: { q?: string; category_id?: number; subcategory_id?: number; categoryName?: string } | undefined;
   Chat: undefined;
   Orders: undefined;
 };
@@ -41,7 +41,7 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   // ── Onboarding ──────────────────────────────────────────────
   Splash: undefined;
-  LocationPermission: undefined;
+  WelcomePitch: undefined;
   NotificationPermission: undefined;
   GetStarted: undefined;
 
@@ -59,16 +59,16 @@ export type RootStackParamList = {
 
   // ── Notifications ────────────────────────────────────────────
   Notifications: undefined;
-  NotificationDetails: { notificationId: string };
+  NotificationDetails: { notificationId: string; title?: string; body?: string; notificationType?: string; refId?: string };
   PushPreview: undefined;
 
   // ── Reviews ──────────────────────────────────────────────────
-  RateVendor: { vendorId: string };
-  WriteReview: { vendorId: string; rating: number };
+  RateVendor: { vendorId: string; orderId: string };
+  WriteReview: { vendorId: string; orderId: string; rating: number };
   ReviewsList: { vendorId: string };
 
   // ── Service request flow ─────────────────────────────────────
-  CreateRequest: undefined;
+  CreateRequest: { serviceId: string; serviceName: string } | undefined;
   SelectServiceType: undefined;
   SelectSubservice: { serviceTypeId: string };
   AttachDocs: undefined;
@@ -99,7 +99,7 @@ export type RootStackParamList = {
   PaymentMethods: { orderId: string };
   NeftTransfer: { orderId: string };
   PendingVerification: { orderId: string };
-  Razorpay: { orderId: string; amount: number };
+  Razorpay: { orderId: string; amount: number; paymentId: string };
   PaymentSuccess: { orderId: string };
   PaymentFailed: { orderId: string };
   TransactionHistory: undefined;

@@ -6,7 +6,7 @@ import type { AuthStackParamList, MainTabParamList, RootStackParamList } from '.
 
 import {
   SplashScreen,
-  LocationPermissionScreen,
+  WelcomePitchScreen,
   NotificationPermissionScreen,
   GetStartedScreen,
 } from '@screens/onboarding';
@@ -123,7 +123,7 @@ const MainTabs = () => (
 export const RootNavigator: React.FC = () => (
   <RootStack.Navigator screenOptions={screenOpts} initialRouteName="Splash">
     <RootStack.Screen name="Splash" component={SplashScreen} options={{ animation: 'fade' }} />
-    <RootStack.Screen name="LocationPermission" component={LocationPermissionScreen} />
+    <RootStack.Screen name="WelcomePitch" component={WelcomePitchScreen} />
     <RootStack.Screen name="NotificationPermission" component={NotificationPermissionScreen} />
     <RootStack.Screen name="GetStarted" component={GetStartedScreen} />
 

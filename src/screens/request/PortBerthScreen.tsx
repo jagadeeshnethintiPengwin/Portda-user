@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, ScreenBody, BottomCta, Btn, Card, RowBetween, Txt, Chip, SearchBar } from '@ui';
+import { Screen, ScreenBody, BottomCta, Btn, Card, RowBetween, Txt, Chip, SearchBar, TextField } from '@ui';
 import { colors } from '@theme';
 import { RequestTopbar, StepDots, rs } from './shared';
 import { catalogApi } from '../../api';
@@ -17,11 +17,13 @@ const Radio: React.FC<{ on?: boolean }> = ({ on }) => (
 /* 4.6 Port & Berth Selection */
 export const PortBerthScreen: React.FC = () => {
   const nav = useNavigation<any>();
-  const { setDraftField } = useRequestDraft();
+  const { draft, setDraftField } = useRequestDraft();
   const [ports, setPorts] = React.useState<Port[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [selectedPortId, setSelectedPortId] = React.useState<number | null>(null);
+  const [selectedPortId, setSelectedPortId] = React.useState<number | null>(draft.portId);
   const [berth, setBerth] = React.useState(0);
+  const [vesselName, setVesselName] = React.useState(draft.vesselName);
+  const [imoNumber, setImoNumber] = React.useState(draft.imoNumber);
 
   const berths: [string, string, string][] = [
     ['Berth T4', 'BMCT', '330m · 14.5m draft'],
@@ -37,11 +39,16 @@ export const PortBerthScreen: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const trimmedVessel = vesselName.trim();
+  const canContinue = selectedPortId !== null && trimmedVessel.length > 0;
+
   const handleContinue = () => {
     const selectedPort = ports.find(p => p.id === selectedPortId);
-    if (!selectedPort) return;
+    if (!selectedPort || !trimmedVessel) return;
     setDraftField('portId', selectedPort.id);
     setDraftField('portName', selectedPort.name);
+    setDraftField('vesselName', trimmedVessel);
+    setDraftField('imoNumber', imoNumber.trim());
     nav.navigate('RequestPreview');
   };
 
@@ -53,9 +60,29 @@ export const PortBerthScreen: React.FC = () => {
       </View>
       <ScreenBody>
         <Txt size="lg" weight="bold">Where will the service take place?</Txt>
-        <Txt size="sm" color={colors.text2} style={{ marginTop: 4 }}>Choose the port and berth for this request.</Txt>
+        <Txt size="sm" color={colors.text2} style={{ marginTop: 4 }}>Tell us the vessel, then choose the port and berth.</Txt>
 
-        <Txt size="xs" color={colors.text2} weight="semi" style={{ marginTop: 16, letterSpacing: 0.5 }}>STEP 1 · PORT</Txt>
+        <Txt size="xs" color={colors.text2} weight="semi" style={{ marginTop: 16, letterSpacing: 0.5 }}>STEP 1 · VESSEL</Txt>
+        <View style={{ marginTop: 8 }}>
+          <TextField
+            label="Vessel name *"
+            placeholder="e.g. MV Pacific Bridge"
+            value={vesselName}
+            onChangeText={setVesselName}
+            autoCapitalize="words"
+            autoCorrect={false}
+          />
+          <TextField
+            label="IMO number (optional)"
+            placeholder="e.g. 9456712"
+            value={imoNumber}
+            onChangeText={setImoNumber}
+            keyboardType="number-pad"
+            autoCorrect={false}
+          />
+        </View>
+
+        <Txt size="xs" color={colors.text2} weight="semi" style={{ marginTop: 16, letterSpacing: 0.5 }}>STEP 2 · PORT</Txt>
         <View style={{ marginTop: 8 }}>
           <SearchBar placeholder="Search ports by name or UN code..." mic={false} />
         </View>
@@ -80,7 +107,7 @@ export const PortBerthScreen: React.FC = () => {
           })
         )}
 
-        <Txt size="xs" color={colors.text2} weight="semi" style={{ marginTop: 16, letterSpacing: 0.5 }}>STEP 2 · TERMINAL & BERTH</Txt>
+        <Txt size="xs" color={colors.text2} weight="semi" style={{ marginTop: 16, letterSpacing: 0.5 }}>STEP 3 · TERMINAL & BERTH</Txt>
         <View style={[rs.grid2, { marginTop: 8 }]}>
           {berths.map(([name, code, sub], i) => {
             const active = i === berth;
@@ -109,7 +136,7 @@ export const PortBerthScreen: React.FC = () => {
       <BottomCta>
         <Btn
           title="Continue to Preview →"
-          disabled={selectedPortId === null}
+          disabled={!canContinue}
           onPress={handleContinue}
         />
       </BottomCta>

@@ -89,7 +89,13 @@ export const NotificationsScreen: React.FC = () => {
       notificationsApi.markRead(n.id).catch(() => {});
       setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x));
     }
-    nav.navigate('NotificationDetails', { notificationId: String(n.id) });
+    nav.navigate('NotificationDetails', {
+      notificationId: String(n.id),
+      title: n.title,
+      body: n.body,
+      notificationType: n.type,
+      refId: n.data?.id ? String(n.data.id) : undefined,
+    });
   };
 
   return (

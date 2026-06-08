@@ -25,7 +25,7 @@ export const PushPreviewScreen: React.FC = () => {
           {cards.map(([head, title, body, opacity], i) => (
             <View key={i} style={[ns.pushCard, { backgroundColor: `rgba(255,255,255,${opacity})` }]}>
               <Row gap={8} style={{ marginBottom: 4 }}>
-                <View style={ns.pushMark}><Text style={{ fontSize: 11, color: '#fff' }}>⚓</Text></View>
+                <View style={ns.pushMark}><Text style={{ fontSize: 13, color: '#fff' }}>⚓</Text></View>
                 <Text style={{ fontSize: fontSize.xs, color: '#fff', opacity: 0.7 }}>{head}</Text>
               </Row>
               <Text style={{ fontSize: fontSize.sm, fontWeight: '600', color: '#fff' }}>{title}</Text>

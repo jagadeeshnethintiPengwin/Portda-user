@@ -1,36 +1,77 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Screen, ScreenBody, Topbar, Card, Row, RowBetween, Txt, Chip, IconBox, HeroGradient } from '@ui';
 import { colors } from '@theme';
 import { IconBtnBox, pps } from './shared';
+import { paymentsApi } from '../../api';
+import type { Payment } from '../../api';
 
-interface Txn { vendor: string; amount: string; sub: string; status: string; tone: 'success' | 'primary' | 'warning'; icon: string; iconBg: string; iconFg: string; }
+const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'primary' | 'accent'> = {
+  success: 'success',
+  pending: 'warning',
+  initiated: 'warning',
+  failed: 'accent',
+  refunded: 'primary',
+};
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function statusLabel(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 /* 8.8 Transaction History */
 export const TransactionHistoryScreen: React.FC = () => {
-  const today: Txn[] = [
-    { vendor: 'Coastal Bunkers Pvt Ltd', amount: '−₹1,74,640', sub: 'NEFT · #PORT-48217 · 15:42', status: 'Paid', tone: 'success', icon: '↑', iconBg: colors.successLight, iconFg: colors.success },
-    { vendor: 'Coastal Bunkers Pvt Ltd', amount: '−₹43,660', sub: 'NEFT · Advance · 14 May, 10:14', status: 'Paid', tone: 'success', icon: '↑', iconBg: colors.warningLight, iconFg: colors.warning },
-  ];
-  const yesterday: Txn[] = [
-    { vendor: 'Anchor Survey & Inspection', amount: '+₹45,000', sub: 'NEFT · #PORT-47802', status: 'Refund', tone: 'primary', icon: '↓', iconBg: colors.primaryLight, iconFg: colors.primary },
-  ];
-  const older: Txn[] = [
-    { vendor: 'Mumbai Marine Services', amount: '−₹2,18,300', sub: 'NEFT · #PORT-48005', status: 'Paid', tone: 'success', icon: '↑', iconBg: colors.successLight, iconFg: colors.success },
-    { vendor: 'Port Stevedoring Ltd', amount: '−₹4,80,000', sub: 'NEFT · #PORT-47956', status: 'Paid', tone: 'success', icon: '↑', iconBg: colors.successLight, iconFg: colors.success },
-  ];
-  const renderTxn = (t: Txn, i: number) => (
-    <Card key={i} style={{ marginBottom: 10 }}>
+  const nav = useNavigation<any>();
+  const [payments, setPayments] = React.useState<Payment[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    paymentsApi.list()
+      .then(setPayments)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const totalSpent = payments
+    .filter(p => p.status === 'success')
+    .reduce((s, p) => s + p.amount, 0);
+
+  const renderPayment = (p: Payment) => (
+    <Card key={p.id} style={{ marginBottom: 10 }}>
       <Row gap={10}>
-        <IconBox size={36} rounded={12} bg={t.iconBg}><Text style={{ fontSize: 14, color: t.iconFg }}>{t.icon}</Text></IconBox>
+        <IconBox
+          size={36}
+          rounded={12}
+          bg={p.status === 'success' ? colors.successLight : p.status === 'refunded' ? colors.primaryLight : colors.warningLight}
+        >
+          <Txt size="sm" weight="bold" color={p.status === 'success' ? colors.success : p.status === 'refunded' ? colors.primary : colors.warning}>
+            {p.status === 'refunded' ? '↓' : '↑'}
+          </Txt>
+        </IconBox>
         <View style={{ flex: 1 }}>
-          <RowBetween><Txt size="sm" weight="semi">{t.vendor}</Txt><Txt size="sm" weight="bold" color={t.tone === 'primary' ? colors.success : colors.text}>{t.amount}</Txt></RowBetween>
-          <RowBetween><Txt size="xs" color={colors.text2}>{t.sub}</Txt><Chip label={t.status} variant={t.tone} /></RowBetween>
+          <RowBetween>
+            <Txt size="sm" weight="semi">{p.reference}</Txt>
+            <Txt
+              size="sm"
+              weight="bold"
+              color={p.status === 'refunded' ? colors.success : colors.text}
+            >
+              {p.status === 'refunded' ? '+' : '−'}₹{p.amount.toLocaleString('en-IN')}
+            </Txt>
+          </RowBetween>
+          <RowBetween>
+            <Txt size="xs" color={colors.text2}>{p.method.toUpperCase()} · {fmtDate(p.created_at)}</Txt>
+            <Chip label={statusLabel(p.status)} variant={STATUS_VARIANT[p.status] ?? 'gray'} />
+          </RowBetween>
         </View>
       </Row>
     </Card>
   );
+
   return (
     <Screen>
       <Topbar title="Transactions" onBack={undefined} right={<IconBtnBox name="sliders" />} />
@@ -38,24 +79,25 @@ export const TransactionHistoryScreen: React.FC = () => {
         <HeroGradient style={pps.heroCard}>
           <RowBetween>
             <View>
-              <Text style={pps.heroKicker}>TOTAL SPEND · FY 26</Text>
-              <Txt size="xxl" weight="bold" color="#fff" style={{ marginTop: 4 }}>₹3.84 Cr</Txt>
-              <Text style={pps.heroSub}>82 service orders this year</Text>
+              <Txt size="xs" color="rgba(255,255,255,0.75)" weight="semi">TOTAL SPEND</Txt>
+              <Txt size="xxl" weight="bold" color="#fff" style={{ marginTop: 4 }}>
+                ₹{totalSpent.toLocaleString('en-IN')}
+              </Txt>
+              <Txt size="xs" color="rgba(255,255,255,0.75)" style={{ marginTop: 2 }}>
+                {payments.filter(p => p.status === 'success').length} successful payments
+              </Txt>
             </View>
-            <Text style={{ fontSize: 36, opacity: 0.4, color: '#fff' }}>₹</Text>
           </RowBetween>
         </HeroGradient>
       </View>
       <ScreenBody contentContainerStyle={{ paddingTop: 8, paddingHorizontal: 16, paddingBottom: 16 }}>
-        <Row gap={6} style={{ marginBottom: 12, flexWrap: 'wrap' }}>
-          {[['All', true], ['Paid', false], ['Refund', false], ['May', false]].map(([t, a]) => <Chip key={t as string} label={t as string} variant={a ? 'primary' : 'gray'} />)}
-        </Row>
-        <Txt size="xs" color={colors.text2} weight="semi" style={{ marginBottom: 8 }}>TODAY</Txt>
-        {today.map(renderTxn)}
-        <Txt size="xs" color={colors.text2} weight="semi" style={{ marginTop: 2, marginBottom: 8 }}>YESTERDAY</Txt>
-        {yesterday.map(renderTxn)}
-        <Txt size="xs" color={colors.text2} weight="semi" style={{ marginTop: 2, marginBottom: 8 }}>10 MAY</Txt>
-        {older.map(renderTxn)}
+        {loading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+        ) : payments.length === 0 ? (
+          <Txt size="md" color={colors.text2} center style={{ marginTop: 40 }}>No transactions yet.</Txt>
+        ) : (
+          payments.map(renderPayment)
+        )}
       </ScreenBody>
     </Screen>
   );

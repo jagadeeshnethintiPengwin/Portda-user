@@ -1,150 +1,131 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Screen, ScreenBody, Topbar, Btn, Row, RowBetween, Txt, Icon } from '@ui';
 import { colors, font, fontSize, gradients, radius, shadow } from '@theme';
+import { vendorsApi, catalogApi } from '../../api';
+import type { VendorProfile, Category } from '../../api';
+import type { MainTabParamList } from '@navigation/types';
 
-/* ─── data ───────────────────────────────────────────────────────── */
-
-interface Vendor {
-  initials: string;
-  avatar: 'primary' | 'accent' | 'success' | 'warning';
-  name: string;
-  badge: { label: string; tone: 'lic' | 'pro' | 'fast' };
-  category: string;
-  rating: string;
-  stat1: string;
-  stat2: string;
-  tags: string[];
-}
-
-const VENDORS: Vendor[] = [
-  {
-    initials: 'MM', avatar: 'primary',
-    name: 'Mumbai Marine Services',
-    badge: { label: '✓ DGS', tone: 'lic' },
-    category: 'Pilotage & Mooring', rating: '★ 4.9',
-    stat1: '238 calls', stat2: '22y exp',
-    tags: ['24/7 on-call', '2 pilot boats', 'ISO 9001'],
-  },
-  {
-    initials: 'CB', avatar: 'accent',
-    name: 'Coastal Bunkers Pvt Ltd',
-    badge: { label: '★ Pro', tone: 'pro' },
-    category: 'VLSFO · MGO · Marine Lubes', rating: '★ 4.8',
-    stat1: '412 supplies', stat2: '14y exp',
-    tags: ['Barge delivery', 'SDS docs', 'USD invoicing'],
-  },
-  {
-    initials: 'ST', avatar: 'success',
-    name: 'Sagar Tug Co.',
-    badge: { label: '✓ DGS', tone: 'lic' },
-    category: 'Towage · Harbour Tugs · Salvage', rating: '★ 4.7',
-    stat1: '189 ops', stat2: '11y exp',
-    tags: ['4 ASD tugs', 'Emergency'],
-  },
-  {
-    initials: 'AR', avatar: 'warning',
-    name: 'Anchor Marine Repair',
-    badge: { label: '⚡ Fast', tone: 'fast' },
-    category: 'Onboard & Drydock Repair', rating: '★ 4.9',
-    stat1: '326 jobs', stat2: '18y exp',
-    tags: ['Class approved', 'Hot work', 'Divers'],
-  },
-];
-
-const AVATAR_GRADIENT = {
-  primary: gradients.vAvatar,
-  accent:  gradients.vAvatarAccent,
-  success: gradients.vAvatarSuccess,
-  warning: gradients.vAvatarWarning,
-};
-const AVATAR_FG = {
-  primary: colors.primary,
-  accent:  colors.accent,
-  success: colors.success,
-  warning: '#B45309',
-};
-const BADGE_STYLE = {
-  lic:  { bg: colors.successLight, fg: colors.success },
-  pro:  { bg: colors.primaryLight, fg: colors.primary },
-  fast: { bg: colors.warningLight, fg: colors.warning },
-};
-
-/* ─── filter definitions ─────────────────────────────────────────── */
-
-const FILTERS = [
-  { key: 'all',       label: 'All'       },
-  { key: 'pilotage',  label: 'Pilotage'  },
-  { key: 'tug',       label: 'Tug'       },
-  { key: 'bunker',    label: 'Bunker'    },
-  { key: 'survey',    label: 'Survey'    },
-  { key: 'repair',    label: 'Repair'    },
-  { key: 'chandling', label: 'Chandling' },
+const AVATAR_COLORS = [
+  { g: gradients.vAvatar,        fg: colors.primary },
+  { g: gradients.vAvatarAccent,  fg: colors.accent  },
+  { g: gradients.vAvatarSuccess, fg: colors.success },
+  { g: gradients.vAvatarWarning, fg: '#B45309'      },
 ] as const;
 
-/* ─── screen ─────────────────────────────────────────────────────── */
+/* Safely derive 1-2 uppercase initials from any value the API sends */
+function initials(name: string | null | undefined): string {
+  if (!name || typeof name !== 'string') return '?';
+  return (
+    name
+      .trim()
+      .split(' ')
+      .slice(0, 2)
+      .map(w => w[0] ?? '')
+      .join('')
+      .toUpperCase() || '?'
+  );
+}
 
 export const FeaturedVendorsScreen: React.FC = () => {
   const nav = useNavigation<any>();
-  const [filter, setFilter] = React.useState(0);
+  const route = useRoute<RouteProp<MainTabParamList, 'Vendors'>>();
+  const incomingQ = route.params?.q;
+  const incomingCategoryId = route.params?.category_id;
+  const incomingSubcategoryId = route.params?.subcategory_id;
+
+  const [vendors, setVendors] = React.useState<VendorProfile[]>([]);
+  const [categories, setCategories] = React.useState<Category[]>([]);
+  const [filterIdx, setFilterIdx] = React.useState(0);
+  const [loading, setLoading] = React.useState(true);
+  const [filterLoading, setFilterLoading] = React.useState(false);
+
+  /* Initial load — vendors (honouring any incoming filter) + categories. */
+  React.useEffect(() => {
+    const initialFilter = {
+      ...(incomingQ ? { q: incomingQ } : {}),
+      ...(incomingCategoryId ? { category_id: incomingCategoryId } : {}),
+      ...(incomingSubcategoryId ? { subcategory_id: incomingSubcategoryId } : {}),
+    };
+    Promise.all([vendorsApi.list(initialFilter), catalogApi.categories()])
+      .then(([v, c]) => {
+        setVendors(Array.isArray(v) ? v : []);
+        setCategories(Array.isArray(c) ? c : []);
+        // Pre-select the matching filter chip when arriving with a category.
+        if (incomingCategoryId && Array.isArray(c)) {
+          const idx = c.findIndex(cat => cat.id === incomingCategoryId);
+          if (idx >= 0) setFilterIdx(idx + 1);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  // Re-run when navigated to with new params.
+  }, [incomingQ, incomingCategoryId, incomingSubcategoryId]);
+
+  /* Re-fetch vendors when the user taps a category filter chip.
+     Skip on first render to avoid a duplicate call with the initial load. */
+  const firstRender = React.useRef(true);
+  React.useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    const chips = [{ id: null }, ...categories.map(c => ({ id: c.id }))];
+    const selected = chips[filterIdx];
+    setFilterLoading(true);
+    vendorsApi.list(selected?.id ? { category_id: selected.id } : {})
+      .then(v => setVendors(Array.isArray(v) ? v : []))
+      .catch(() => {})
+      .finally(() => setFilterLoading(false));
+  }, [filterIdx]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const chips = [
+    { id: null, label: 'All' },
+    ...categories.map(c => ({ id: c.id, label: c.name })),
+  ];
 
   return (
     <Screen>
       <Topbar
-        title="Featured Vendors"
-        onBack={() => nav.goBack()}
+        title="Top Vendors"
+        onBack={undefined}
         right={
           <View style={styles.headerBtn}>
-            <Icon name="sliders" size={18} color={colors.text} />
+            <Icon name="search" size={18} color={colors.text} />
           </View>
         }
       />
-
       <ScreenBody>
-        {/* ── Category filter strip ─────────────────────────────────
-            Uses a plain ScrollView (not ScreenBody) so no safe-area
-            bottom insets are injected into a horizontal rail.
-            marginHorizontal: -16 + paddingLeft: 16 bleeds to the
-            screen edge while keeping left-edge content aligned.       */}
+        {/* Category filter strip */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterStrip}
           contentContainerStyle={styles.filterStripContent}
         >
-          {FILTERS.map((f, i) => (
+          {chips.map((chip, i) => (
             <Pressable
-              key={f.key}
-              onPress={() => setFilter(i)}
-              style={[
-                styles.filterChip,
-                i === filter && styles.filterChipActive,
-              ]}
+              key={chip.label}
+              onPress={() => setFilterIdx(i)}
+              style={[styles.filterChip, i === filterIdx && styles.filterChipActive]}
             >
-              <Text
-                style={[
-                  styles.filterChipLabel,
-                  i === filter && styles.filterChipLabelActive,
-                ]}
-              >
-                {f.label}
+              <Text style={[styles.filterChipLabel, i === filterIdx && styles.filterChipLabelActive]}>
+                {chip.label}
               </Text>
             </Pressable>
           ))}
         </ScrollView>
 
-        {/* ── Result meta row ──────────────────────────────────── */}
         <RowBetween style={{ marginBottom: 12 }}>
           <Txt size="xs" color={colors.text2}>
-            <Txt size="xs" weight="bold">42 vendors</Txt> near you
+            <Txt size="xs" weight="bold">{vendors.length} vendors</Txt> near you
           </Txt>
           <Row gap={4}>
             <Txt size="xs" color={colors.text2}>Sort:</Txt>
@@ -152,175 +133,109 @@ export const FeaturedVendorsScreen: React.FC = () => {
           </Row>
         </RowBetween>
 
-        {/* ── Vendor cards ─────────────────────────────────────── */}
-        {VENDORS.map(v => (
-          <View key={v.name} style={styles.vendorCard}>
-            <Row gap={12} style={{ alignItems: 'flex-start' }}>
-              <LinearGradient colors={AVATAR_GRADIENT[v.avatar]} style={styles.vAvatar}>
-                <Text style={{ color: AVATAR_FG[v.avatar], fontSize: 14, fontWeight: '800' }}>
-                  {v.initials}
-                </Text>
-              </LinearGradient>
+        {loading || filterLoading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
+        ) : vendors.length === 0 ? (
+          <Txt size="md" color={colors.text2} center style={{ marginTop: 40 }}>
+            No vendors found.
+          </Txt>
+        ) : (
+          vendors.map((v, idx) => {
+            const { g, fg } = AVATAR_COLORS[idx % AVATAR_COLORS.length];
 
-              <View style={{ flex: 1 }}>
-                <RowBetween style={{ alignItems: 'flex-start' }}>
-                  <Text style={styles.vName} numberOfLines={1}>{v.name}</Text>
-                  <View style={[styles.vBadge, { backgroundColor: BADGE_STYLE[v.badge.tone].bg }]}>
-                    <Text style={{ fontSize: 9, fontWeight: '700', color: BADGE_STYLE[v.badge.tone].fg }}>
-                      {v.badge.label}
-                    </Text>
+            /* Guard every field that the API might omit */
+            const name = v.company_name ?? '';
+            const inits = initials(name);
+            const rating = (v.rating != null && !isNaN(Number(v.rating)))
+              ? Number(v.rating)
+              : null;
+            const jobs = v.jobs_completed ?? 0;
+
+            return (
+              <View key={v.id} style={styles.vendorCard}>
+                <Row gap={12} style={{ alignItems: 'flex-start' }}>
+                  <LinearGradient colors={g} style={styles.vAvatar}>
+                    <Text style={{ color: fg, fontSize: 16, fontWeight: '800' }}>{inits}</Text>
+                  </LinearGradient>
+
+                  <View style={{ flex: 1 }}>
+                    <RowBetween style={{ alignItems: 'flex-start' }}>
+                      <Text style={styles.vName} numberOfLines={1}>{name || '—'}</Text>
+                      {v.is_premium ? (
+                        <View style={[styles.vBadge, { backgroundColor: colors.primaryLight }]}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary }}>★ Pro</Text>
+                        </View>
+                      ) : v.is_verified ? (
+                        <View style={[styles.vBadge, { backgroundColor: colors.successLight }]}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.success }}>✓ Verified</Text>
+                        </View>
+                      ) : null}
+                    </RowBetween>
+
+                    {v.description ? (
+                      <Txt size="base" color={colors.text2} style={{ marginTop: 4 }} numberOfLines={1}>
+                        {v.description}
+                      </Txt>
+                    ) : null}
+
+                    <Row gap={8} style={{ marginTop: 6 }}>
+                      {rating !== null ? (
+                        <>
+                          <Text style={{ color: '#B45309', fontWeight: '700', fontSize: fontSize.sm }}>
+                            ★ {rating.toFixed(1)}
+                          </Text>
+                          <View style={styles.vSep} />
+                        </>
+                      ) : null}
+                      <Txt size="sm" color={colors.text2}>{jobs} jobs</Txt>
+                    </Row>
                   </View>
-                </RowBetween>
+                </Row>
 
-                <Txt size="base" color={colors.text2} style={{ marginTop: 4 }}>
-                  {v.category}
-                </Txt>
-
-                <Row gap={8} style={{ marginTop: 6 }}>
-                  <Text style={{ color: '#B45309', fontWeight: '700', fontSize: fontSize.sm }}>
-                    {v.rating}
-                  </Text>
-                  <View style={styles.vSep} />
-                  <Txt size="sm" color={colors.text2}>{v.stat1}</Txt>
-                  <View style={styles.vSep} />
-                  <Txt size="sm" color={colors.text2}>{v.stat2}</Txt>
+                <Row gap={8} style={{ marginTop: 14 }}>
+                  <Btn
+                    title="View"
+                    variant="outline"
+                    style={{ flex: 1 }}
+                    sm
+                    onPress={() => nav.navigate('VendorProfile', { vendorId: String(v.id) })}
+                  />
+                  <Btn
+                    title="Get Quote"
+                    style={{ flex: 1 }}
+                    sm
+                    onPress={() => nav.navigate('CreateRequest')}
+                  />
                 </Row>
               </View>
-            </Row>
-
-            <Row gap={6} style={{ marginTop: 12, flexWrap: 'wrap' }}>
-              {v.tags.map(tag => (
-                <Text key={tag} style={styles.vTag}>{tag}</Text>
-              ))}
-            </Row>
-
-            <Row gap={8} style={{ marginTop: 14 }}>
-              <Btn
-                title="View"
-                variant="outline"
-                style={{ flex: 1 }}
-                sm
-                onPress={() => nav.navigate('VendorProfile')}
-              />
-              <Btn
-                title="Get Quote"
-                style={{ flex: 1 }}
-                sm
-                onPress={() => nav.navigate('Requests')}
-              />
-            </Row>
-          </View>
-        ))}
+            );
+          })
+        )}
       </ScreenBody>
     </Screen>
   );
 };
 
-/* ─── styles ─────────────────────────────────────────────────────── */
-
 const styles = StyleSheet.create({
-  /* ── Header ─────────────────────────────────────────────────── */
   headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 36, height: 36, borderRadius: radius.md,
+    backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center',
   },
-
-  /* ── Filter strip ───────────────────────────────────────────── */
-
-  /**
-   * Negative horizontal margin bleeds the strip to the screen edges;
-   * paddingLeft re-aligns the first chip with the content column.
-   */
-  filterStrip: {
-    flexGrow: 0,
-    marginHorizontal: -16,
-    paddingLeft: 16,
-    marginBottom: 16,
-  },
-  filterStripContent: {
-    gap: 8,
-    paddingRight: 16,
-    alignItems: 'center',
-  },
-
-  /** Inactive chip — white surface, small rounded rectangle, subtle border. */
+  filterStrip: { flexGrow: 0, marginHorizontal: -16, paddingLeft: 16, marginBottom: 16 },
+  filterStripContent: { gap: 8, paddingRight: 16, alignItems: 'center' },
   filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: radius.md,        // ~8 px — rectangular feel
-    backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    ...shadow.sm,
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.md,
+    backgroundColor: '#fff', borderWidth: 1.5, borderColor: colors.border, ...shadow.sm,
   },
-
-  /** Active chip — solid navy fill, no pill. */
-  filterChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
-  },
-
-  filterChipLabel: {
-    fontSize: fontSize.sm,          // 13 px — compact
-    fontWeight: font.semi,          // 600
-    color: colors.text2,
-    letterSpacing: 0.1,
-  },
-  filterChipLabelActive: {
-    color: '#fff',
-  },
-
-  /* ── Vendor card ────────────────────────────────────────────── */
+  filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterChipLabel: { fontSize: fontSize.sm, fontWeight: font.semi, color: colors.text2, letterSpacing: 0.1 },
+  filterChipLabelActive: { color: '#fff' },
   vendorCard: {
-    backgroundColor: '#fff',
-    borderRadius: radius.xl,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border2,
-    marginBottom: 10,
+    backgroundColor: '#fff', borderRadius: radius.xl, padding: 14,
+    borderWidth: 1, borderColor: colors.border2, marginBottom: 10,
   },
-  vAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  vName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-    flex: 1,
-    marginRight: 8,
-  },
-  vBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-  },
-  vSep: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.text3,
-  },
-  vTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: colors.bg,
-    color: colors.text2,
-    fontSize: 10,
-    fontWeight: '600',
-    overflow: 'hidden',
-  },
+  vAvatar: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  vName: { fontSize: 16, fontWeight: '700', color: colors.text, flex: 1, marginRight: 8 },
+  vBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.pill },
+  vSep: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: colors.text3 },
 });

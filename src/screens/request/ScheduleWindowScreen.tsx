@@ -8,12 +8,14 @@ import {
   Btn,
   Card,
   Row,
-  RowBetween,
   Txt,
   Tabs,
+  MonthCalendar,
+  toISODate,
 } from '@ui';
-import { colors, font, fontSize, radius } from '@theme';
-import { RequestTopbar, rs } from './shared';
+import { colors, fontSize, radius } from '@theme';
+import { RequestTopbar } from './shared';
+import { useRequestDraft } from '../../context/RequestDraftContext';
 
 /* ── Time-window data ─────────────────────────────────── */
 interface TimeWindow {
@@ -30,21 +32,32 @@ const WINDOWS: TimeWindow[] = [
   { time: '18:00 – 24:00', label: 'Evening',    icon: '🌆', hint: 'Departure window'       },
 ];
 
-/* ── Calendar helpers ─────────────────────────────────── */
-const DAY_LABELS  = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const WEEK_1      = ['12', '13', '14', '15', '16', '17', '18'];
-const WEEK_2      = ['19', '20', '21', '22', '23', '24', '25'];
-const PAST_DAYS   = new Set(['12']);   // visually dimmed
+/** Start-of-window times sent to the API as service_time (HH:MM). */
+const WINDOW_START = ['00:00', '06:00', '12:00', '18:00'];
 
 /* ══════════════════════════════════════════════════════
    Screen
 ══════════════════════════════════════════════════════ */
 export const ScheduleWindowScreen: React.FC = () => {
   const nav = useNavigation<any>();
+  const { setDraftField } = useRequestDraft();
 
   const [tab, setTab] = useState(0);
-  const [day, setDay] = useState('15');
+  const [date, setDate] = useState<Date>(() => new Date()); // ETA defaults to today
   const [win, setWin] = useState(2);   // Afternoon pre-selected
+
+  const handleNext = () => {
+    if (tab === 0) {
+      // Specific ETA: persist date + window-start time into the draft.
+      setDraftField('serviceDate', toISODate(date));
+      setDraftField('serviceTime', WINDOW_START[win] ?? '');
+    } else {
+      // On vessel arrival: no fixed schedule.
+      setDraftField('serviceDate', '');
+      setDraftField('serviceTime', '');
+    }
+    nav.navigate('PortBerth');
+  };
 
   return (
     <Screen>
@@ -64,59 +77,7 @@ export const ScheduleWindowScreen: React.FC = () => {
             {/* ── Calendar ──────────────────────────────── */}
             <Txt size="sm" weight="semi" style={ss.sectionLabel}>ETA at port</Txt>
 
-            <Card style={ss.calCard}>
-              {/* Month nav */}
-              <RowBetween style={ss.calHeader}>
-                <Txt size="sm" weight="semi">May 2026</Txt>
-                <Row gap={16}>
-                  <Pressable hitSlop={8} style={ss.calNavBtn}>
-                    <Text style={ss.calNavTxt}>‹</Text>
-                  </Pressable>
-                  <Pressable hitSlop={8} style={ss.calNavBtn}>
-                    <Text style={ss.calNavTxt}>›</Text>
-                  </Pressable>
-                </Row>
-              </RowBetween>
-
-              {/* Weekday headers */}
-              <View style={rs.calRow}>
-                {DAY_LABELS.map((d, i) => (
-                  <Text key={i} style={[rs.calCell, ss.calDayHeader]}>{d}</Text>
-                ))}
-              </View>
-
-              {/* Week rows */}
-              {[WEEK_1, WEEK_2].map((week, wi) => (
-                <View key={wi} style={rs.calRow}>
-                  {week.map(d => {
-                    const selected = d === day;
-                    const past     = PAST_DAYS.has(d);
-                    return (
-                      <Pressable
-                        key={d}
-                        onPress={() => !past && setDay(d)}
-                        style={[
-                          rs.calDayWrap,
-                          ss.calDayCell,
-                          selected && rs.calDaySel,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            rs.calCell,
-                            ss.calDayTxt,
-                            past && !selected && ss.calDayPast,
-                            selected && ss.calDaySelTxt,
-                          ]}
-                        >
-                          {d}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              ))}
-            </Card>
+            <MonthCalendar value={date} onChange={setDate} style={ss.calCard} />
 
             {/* ── Time windows ──────────────────────────── */}
             <Txt size="sm" weight="semi" style={ss.sectionLabel}>
@@ -204,7 +165,7 @@ export const ScheduleWindowScreen: React.FC = () => {
       </ScreenBody>
 
       <BottomCta>
-        <Btn title="Next: Berth →" onPress={() => nav.navigate('PortBerth')} />
+        <Btn title="Next: Berth →" onPress={handleNext} />
       </BottomCta>
     </Screen>
   );
@@ -218,15 +179,7 @@ const ss = StyleSheet.create({
   sectionLabel: { marginTop: 16, marginBottom: 8 },
 
   /* calendar */
-  calCard:      { marginTop: 8, paddingBottom: 4 },
-  calHeader:    { marginBottom: 12 },
-  calNavBtn:    { padding: 4 },
-  calNavTxt:    { fontSize: fontSize.lg, color: colors.text2, fontWeight: font.semi },
-  calDayHeader: { color: colors.text2, fontWeight: font.semi },
-  calDayCell:   { paddingVertical: 7 },
-  calDayTxt:    { fontSize: fontSize.sm, color: colors.text },
-  calDayPast:   { color: colors.text3 },
-  calDaySelTxt: { color: '#fff', fontWeight: font.bold },
+  calCard:      { marginTop: 8 },
 
   /* time-window 2-column grid */
   windowGrid: {
@@ -256,7 +209,7 @@ const ss = StyleSheet.create({
   },
 
   windowIcon: {
-    fontSize: 20,
+    fontSize: 22,
     marginBottom: 2,
   },
   windowTime: {
@@ -297,7 +250,7 @@ const ss = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  arrivalIcon: { fontSize: 22 },
+  arrivalIcon: { fontSize: 24 },
   arrivalDesc: { marginTop: 6, lineHeight: 18 },
   flex1: { flex: 1 },
 

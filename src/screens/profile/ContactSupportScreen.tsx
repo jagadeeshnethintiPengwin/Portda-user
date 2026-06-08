@@ -27,7 +27,7 @@ export const ContactSupportScreen: React.FC = () => {
         {channels.map(([emoji, title, sub, bg, fg]) => (
           <Card key={title} style={{ marginBottom: 10 }}>
             <Row gap={10}>
-              <IconBox size={40} rounded={12} bg={bg}><Text style={{ fontSize: 16, color: fg }}>{emoji}</Text></IconBox>
+              <IconBox size={40} rounded={12} bg={bg}><Text style={{ fontSize: 18, color: fg }}>{emoji}</Text></IconBox>
               <View style={{ flex: 1 }}>
                 <Txt size="sm" weight="semi">{title}</Txt>
                 <Txt size="xs" color={title === 'Live chat' ? colors.success : colors.text2}>{sub}</Txt>

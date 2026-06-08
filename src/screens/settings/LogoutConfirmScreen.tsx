@@ -7,6 +7,7 @@ import { colors } from '@theme';
 import { IconBtnBox, sts } from './shared';
 import { authApi } from '../../api';
 import { useAuth } from '../../context/AuthContext';
+import { removeFCMToken } from '../../services/notifications';
 
 /* 12.4 Logout Confirmation */
 export const LogoutConfirmScreen: React.FC = () => {
@@ -22,6 +23,7 @@ export const LogoutConfirmScreen: React.FC = () => {
     } catch {
       // Clear local state regardless
     }
+    await removeFCMToken().catch(() => {});
     await clearAuth();
     nav.dispatch(
       CommonActions.reset({ index: 0, routes: [{ name: 'Auth' }] }),

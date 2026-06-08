@@ -23,7 +23,7 @@ export const sts = StyleSheet.create({
   popupBackdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(17,24,39,0.5)', alignItems: 'center', justifyContent: 'center', padding: 24 },
   popup: { width: '100%', backgroundColor: '#fff', borderRadius: 18, padding: 20 },
   avatarSm: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  avatarSmTxt: { color: colors.primary, fontWeight: '700', fontSize: 11 },
+  avatarSmTxt: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   dangerCard: { borderRadius: radius.xl, padding: 14, borderWidth: 1, borderColor: '#FECACA', alignItems: 'center' },
   radioCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, backgroundColor: '#fff', borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border2 },
   radioCardActive: { borderWidth: 1.5, borderColor: colors.primary, backgroundColor: colors.primaryLight },

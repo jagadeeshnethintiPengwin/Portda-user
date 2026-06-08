@@ -64,7 +64,7 @@ export const ChatListScreen: React.FC = () => {
                 onPress={() => nav.navigate('ChatThread', { threadId: String(room.id), vendorName: name })}
               >
                 <View style={[styles.avatar, { backgroundColor: colors.primaryLight }]}>
-                  <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 14 }}>
+                  <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 16 }}>
                     {initials(name)}
                   </Text>
                 </View>
@@ -98,5 +98,5 @@ const styles = StyleSheet.create({
   listItem: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, backgroundColor: '#fff', borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border2, marginTop: 8 },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   unread: { backgroundColor: colors.primaryLight, paddingHorizontal: 6, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  unreadTxt: { color: colors.primary, fontSize: 9, fontWeight: '600' },
+  unreadTxt: { color: colors.primary, fontSize: 11, fontWeight: '600' },
 });

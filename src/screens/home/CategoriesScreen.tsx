@@ -8,7 +8,6 @@ import { catalogApi } from '../../api';
 import type { Category } from '../../api';
 import type { IconName } from '@ui/Icon';
 
-/* ── Icon mapping by category keyword ─────────────────────── */
 const ICON_MAP: [string, IconName][] = [
   ['berthing',   'anchor'],
   ['pilotage',   'compass'],

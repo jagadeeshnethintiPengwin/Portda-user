@@ -33,6 +33,10 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Portda needs camera access to take photos of your documents.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Portda needs photo library access to attach images to your request.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string/>
 	<key>RCTNewArchEnabled</key>

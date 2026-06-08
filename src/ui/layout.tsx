@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  searchInput: { flex: 1, fontSize: 14.5, color: colors.text, padding: 0 },
+  searchInput: { flex: 1, fontSize: 16.5, color: colors.text, padding: 0 },
   fab: {
     position: 'absolute',
     right: 16,

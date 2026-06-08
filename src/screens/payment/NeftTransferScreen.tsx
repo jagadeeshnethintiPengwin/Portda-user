@@ -15,7 +15,8 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '@navigation/types';
-import { paymentsApi, ApiError } from '../../api';
+import { ordersApi, paymentsApi, ApiError } from '../../api';
+import type { Order } from '../../api';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -58,17 +59,16 @@ interface ProofFile {
 /* ══════════════════════════════════════════════════════════
    Constants
 ══════════════════════════════════════════════════════════ */
-const ORDER_ID   = '#PORT-48217';
-const VENDOR     = 'Coastal Bunkers Pvt Ltd';
-const AMOUNT_STR = '₹1,74,640';
 const MAX_PROOFS = 3;
 const COPY_TTL   = 2000;
 
+// NOTE: vendor bank coordinates are not exposed by the buyer API, so account
+// no. / IFSC / branch remain placeholders. Amount, vendor name, beneficiary and
+// the order reference below are all driven by the real order.
 const BANK_DETAILS: BankDetail[] = [
-  { key: 'accNo', label: 'Account no.',      value: '50100123456789',      copyable: true  },
-  { key: 'ifsc',  label: 'IFSC',             value: 'HDFC0001234',         copyable: true  },
-  { key: 'type',  label: 'Account type',     value: 'Current',             copyable: false },
-  { key: 'bene',  label: 'Beneficiary name', value: 'Coastal Bunkers Pvt Ltd', copyable: false },
+  { key: 'accNo', label: 'Account no.',  value: '50100123456789', copyable: true  },
+  { key: 'ifsc',  label: 'IFSC',         value: 'HDFC0001234',    copyable: true  },
+  { key: 'type',  label: 'Account type', value: 'Current',        copyable: false },
 ];
 
 /* ══════════════════════════════════════════════════════════
@@ -311,7 +311,7 @@ const sh = StyleSheet.create({
     borderTopColor: colors.border2,
   },
   optIcon: { flexShrink: 0 },
-  optEmoji: { fontSize: 22 },
+  optEmoji: { fontSize: 24 },
   optText: { flex: 1 },
   optSub: { marginTop: 2, lineHeight: 16 },
 
@@ -331,6 +331,21 @@ type NeftProps = NativeStackScreenProps<RootStackParamList, 'NeftTransfer'>;
 export const NeftTransferScreen: React.FC<NeftProps> = ({ route }) => {
   const nav = useNavigation<any>();
   const orderId = route.params?.orderId;
+
+  /* order — drives amount, vendor name and the transfer remark */
+  const [order, setOrder] = useState<Order | null>(null);
+  useEffect(() => {
+    if (!orderId) return;
+    ordersApi.get(orderId).then(setOrder).catch(() => {});
+  }, [orderId]);
+
+  const paid = (order?.payments ?? [])
+    .filter(p => p.status === 'success')
+    .reduce((sum, p) => sum + p.amount, 0);
+  const balance   = order ? Math.max(order.total - paid, 0) : 0;
+  const amountStr  = order ? `₹${balance.toLocaleString('en-IN')}` : '—';
+  const vendorName = order?.vendor?.company_name ?? 'Vendor';
+  const orderRef   = order?.reference ? `#${order.reference}` : (orderId ? `#${orderId}` : '');
 
   /* form */
   const [utr, setUtr]           = useState('');
@@ -365,8 +380,8 @@ export const NeftTransferScreen: React.FC<NeftProps> = ({ route }) => {
 
   const appendProof = useCallback((file: ProofFile) => {
     setProofs(prev => {
-      // replace targetSlot if it already has a file, else append
-      if (targetSlot !== null && prev[targetSlot]) {
+      // replace targetSlot if index is within the current array, else append
+      if (targetSlot !== null && targetSlot < prev.length) {
         const next = [...prev];
         next[targetSlot] = file;
         return next;
@@ -428,7 +443,7 @@ export const NeftTransferScreen: React.FC<NeftProps> = ({ route }) => {
       const proof = proofs[0];
       await paymentsApi.offline(
         orderId,
-        0, // amount loaded from order on backend
+        balance,
         'neft',
         trimmed,
         proof ? { uri: proof.uri, name: proof.name, type: proof.kind === 'pdf' ? 'application/pdf' : 'image/jpeg' } : undefined,
@@ -439,7 +454,7 @@ export const NeftTransferScreen: React.FC<NeftProps> = ({ route }) => {
       const msg = err instanceof ApiError ? err.message : 'Submission failed. Please try again.';
       Alert.alert('Error', msg);
     }
-  }, [utr, orderId, submitting, proofs, nav]);
+  }, [utr, orderId, submitting, proofs, balance, nav]);
 
   /* ── Proof slot renderer ─────────────────────────── */
   const renderProofSlot = (index: number) => {
@@ -505,7 +520,7 @@ export const NeftTransferScreen: React.FC<NeftProps> = ({ route }) => {
           <HeroGradient style={[pps.heroCard, ss.heroCenter]}>
             <Text style={pps.heroKicker}>TRANSFER AMOUNT</Text>
             <Txt size="xxl" weight="bold" color="#fff" style={ss.heroAmt}>
-              {AMOUNT_STR}
+              {amountStr}
             </Txt>
           </HeroGradient>
 
@@ -520,7 +535,7 @@ export const NeftTransferScreen: React.FC<NeftProps> = ({ route }) => {
                 <Text style={ss.bankBrand}>HDFC</Text>
               </IconBox>
               <View>
-                <Txt size="sm" weight="semi">{VENDOR}</Txt>
+                <Txt size="sm" weight="semi">{vendorName}</Txt>
                 <Txt size="xs" color={colors.text2} style={ss.bankBranch}>
                   HDFC Bank, Nariman Point
                 </Txt>
@@ -544,6 +559,10 @@ export const NeftTransferScreen: React.FC<NeftProps> = ({ route }) => {
                 </Row>
               </RowBetween>
             ))}
+            <RowBetween style={ss.detailGap}>
+              <Txt size="xs" color={colors.text2}>Beneficiary name</Txt>
+              <Txt size="xs" weight="semi">{vendorName}</Txt>
+            </RowBetween>
           </Card>
 
           {/* Remark tip */}
@@ -553,7 +572,7 @@ export const NeftTransferScreen: React.FC<NeftProps> = ({ route }) => {
               <View style={ss.flex1}>
                 <Txt size="xs" color={colors.text2} style={ss.lh18}>
                   {'Add '}
-                  <Text style={ss.remarkBold}>{ORDER_ID}</Text>
+                  <Text style={ss.remarkBold}>{orderRef}</Text>
                   {' as the transfer remark so the vendor can identify it.'}
                 </Txt>
               </View>
@@ -691,7 +710,7 @@ const ss = StyleSheet.create({
     gap: 3,
     padding: 6,
   },
-  proofFilledEmoji: { fontSize: 22 },
+  proofFilledEmoji: { fontSize: 24 },
   proofFilledName: {
     fontSize: fontSize.xs,
     fontWeight: font.semi,
@@ -708,7 +727,7 @@ const ss = StyleSheet.create({
     paddingVertical: 2,
   },
   proofRemoveTxt: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: font.semi,
     color: colors.danger,
   },

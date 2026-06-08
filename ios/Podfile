@@ -8,11 +8,16 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
+# Required for @react-native-firebase on new architecture
+use_frameworks! :linkage => :static
+
 linkage = ENV['USE_FRAMEWORKS']
 if linkage != nil
   Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
   use_frameworks! :linkage => linkage.to_sym
 end
+
+$RNFirebaseAsStaticFramework = true
 
 target 'portda' do
   config = use_native_modules!
@@ -30,5 +35,14 @@ target 'portda' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # react-native-firebase under `use_frameworks! :static` includes React-Core
+    # headers non-modularly; `-Werror=non-modular-include-in-framework-module`
+    # makes that fatal. Allow non-modular includes for all pod targets.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      end
+    end
   end
 end

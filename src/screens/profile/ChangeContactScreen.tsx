@@ -111,8 +111,8 @@ export const ChangeContactScreen: React.FC = () => {
     try {
       /* verify OTP — confirms ownership of the new contact */
       await authApi.verifyOtp(identifier, code);
-      /* save to profile */
-      const updated = await profileApi.update({ phone: identifier });
+      /* save to profile — update whichever channel the user is changing */
+      const updated = await profileApi.update({ [field]: identifier });
       updateUser(updated);
       Alert.alert(
         'Updated',
@@ -126,7 +126,7 @@ export const ChangeContactScreen: React.FC = () => {
       setOtp(['', '', '', '']);
       inputRefs[0].current?.focus();
     }
-  }, [verifying, otp, identifier, isPhone, updateUser, nav, inputRefs]);
+  }, [verifying, otp, identifier, field, isPhone, updateUser, nav, inputRefs]);
 
   /* auto-submit when all 4 digits filled */
   const complete = otp.every(d => d !== '');
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     backgroundColor: '#fff',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: font.bold,
     color: colors.primary,
   },

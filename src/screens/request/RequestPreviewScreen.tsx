@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Screen, ScreenBody, BottomCta, Btn, Card, Row, RowBetween, Txt, IconBox, HeroGradient } from '@ui';
+import { Screen, ScreenBody, BottomCta, Btn, Card, Row, RowBetween, Txt, HeroGradient } from '@ui';
 import { colors, fontSize } from '@theme';
 import { RequestTopbar, rs } from './shared';
 import { requestsApi, ApiError } from '../../api';
@@ -24,12 +24,17 @@ export const RequestPreviewScreen: React.FC = () => {
   const [agreed, setAgreed] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
 
-  const canSubmit = agreed && draft.portId !== null && draft.categoryId !== null;
+  const canSubmit =
+    agreed && draft.portId !== null && draft.categoryId !== null && draft.vesselName.trim() !== '';
 
   const handleSubmit = async () => {
-    if (!canSubmit || submitting) return;
+    if (submitting) return;
     if (!draft.portId || !draft.categoryId) {
       Alert.alert('Incomplete', 'Please select a port and service type first.');
+      return;
+    }
+    if (!draft.vesselName.trim()) {
+      Alert.alert('Vessel required', 'Please add the vessel name in the Port & Berth step.');
       return;
     }
 
@@ -77,7 +82,7 @@ export const RequestPreviewScreen: React.FC = () => {
           </Row>
         </HeroGradient>
         <View style={{ marginTop: 12 }}>
-          <PreviewRow label="VESSEL" onEdit={() => nav.navigate('SelectServiceType')}>
+          <PreviewRow label="VESSEL" onEdit={() => nav.navigate('PortBerth')}>
             <Txt size="sm" weight="semi" style={{ marginTop: 4 }}>
               {draft.vesselName || '—'}
             </Txt>
@@ -145,5 +150,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  checkboxMark: { color: '#fff', fontSize: 11, fontWeight: '900', lineHeight: 13 },
+  checkboxMark: { color: '#fff', fontSize: 13, fontWeight: '900', lineHeight: 13 },
 });

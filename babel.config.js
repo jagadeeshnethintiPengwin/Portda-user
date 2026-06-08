@@ -20,5 +20,7 @@ module.exports = {
         },
       },
     ],
+    // Reanimated 4.x: the Worklets babel plugin MUST be listed last.
+    'react-native-worklets/plugin',
   ],
 };
