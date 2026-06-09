@@ -29,4 +29,5 @@ export const revs = StyleSheet.create({
   divider: { height: 1, backgroundColor: colors.border2, marginVertical: 12 },
   barTrack: { flex: 1, height: 6, backgroundColor: colors.bg, borderRadius: 3, overflow: 'hidden' },
   barFill: { height: 6, borderRadius: 3 },
+  replyBox: { marginTop: 10, padding: 10, backgroundColor: colors.primaryLight, borderRadius: radius.lg, borderLeftWidth: 3, borderLeftColor: colors.primary },
 });

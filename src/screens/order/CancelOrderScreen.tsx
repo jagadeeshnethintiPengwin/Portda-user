@@ -87,7 +87,7 @@ export const CancelOrderScreen: React.FC<Props> = ({ route }) => {
       </ScreenBody>
       <BottomCta>
         <Row gap={8}>
-          <Btn title="Keep Order" variant="ghost" style={{ flex: 1 }} onPress={() => nav.goBack()} />
+          <Btn title="Keep Order" variant="ghost" style={{ flex: 1, borderWidth: 1.5, borderColor: colors.border }} onPress={() => nav.goBack()} />
           <Btn
             title={cancelling ? 'Cancelling…' : 'Confirm Cancel'}
             variant="danger"

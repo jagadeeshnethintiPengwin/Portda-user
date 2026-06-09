@@ -15,16 +15,20 @@ const TAGS = ['Punctual', 'Professional', 'Clear communication', 'Fair pricing',
 /* 9.2 Write Review */
 export const WriteReviewScreen: React.FC<Props> = ({ route }) => {
   const nav = useNavigation<any>();
-  const { orderId, rating } = route.params;
+  const { orderId, rating, tags: initialTags, vendorName } = route.params;
   const [title, setTitle] = React.useState('');
   const [body, setBody] = React.useState('');
-  const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
+  // Carry over the tags chosen on the Rate screen so they aren't lost.
+  const [selectedTags, setSelectedTags] = React.useState<string[]>(initialTags ?? []);
   const [submitting, setSubmitting] = React.useState(false);
 
-  const vendorInitials = 'V'; // shown as placeholder; vendor name comes from parent screen
+  const vendorInitials = (vendorName ?? 'Vendor').split(' ').slice(0, 2).map(w => w[0] ?? '').join('').toUpperCase();
 
   const toggleTag = (tag: string) =>
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+
+  // Show the standard tags plus any carried over from the Rate screen.
+  const allTags = Array.from(new Set([...TAGS, ...selectedTags]));
 
   const handleSubmit = async () => {
     if (submitting) return;
@@ -41,7 +45,14 @@ export const WriteReviewScreen: React.FC<Props> = ({ route }) => {
         body: body.trim() || undefined,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
       });
-      nav.navigate('Main', { screen: 'Orders' });
+      // Land back on the order (which now reflects the review) with a clean back stack.
+      nav.reset({
+        index: 1,
+        routes: [
+          { name: 'Main', params: { screen: 'Orders' } },
+          { name: 'OrderDetails', params: { orderId: String(orderId) } },
+        ],
+      });
     } catch (err) {
       setSubmitting(false);
       const msg = err instanceof ApiError ? err.message : 'Failed to submit review.';
@@ -79,6 +90,7 @@ export const WriteReviewScreen: React.FC<Props> = ({ route }) => {
           style={{ minHeight: 120 }}
           placeholder="Describe the service quality, punctuality and communication…"
           multiline
+          maxLength={500}
         />
         <Txt size="xs" color={colors.text2} style={{ marginTop: 4 }}>
           {body.length} / 500 characters
@@ -86,7 +98,7 @@ export const WriteReviewScreen: React.FC<Props> = ({ route }) => {
 
         <Txt size="sm" weight="semi" style={{ marginTop: 16, marginBottom: 8 }}>Tags</Txt>
         <Row gap={6} style={{ flexWrap: 'wrap' }}>
-          {TAGS.map(tag => (
+          {allTags.map(tag => (
             <Btn
               key={tag}
               title={tag}

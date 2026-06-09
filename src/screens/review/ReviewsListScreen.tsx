@@ -132,6 +132,17 @@ export const ReviewsListScreen: React.FC<Props> = ({ route }) => {
                         ))}
                       </Row>
                     ) : null}
+                    {review.vendor_reply ? (
+                      <View style={revs.replyBox}>
+                        <Row gap={6} style={{ marginBottom: 4 }}>
+                          <Icon name="message-circle" size={13} color={colors.primary} />
+                          <Txt size="xs" weight="semi" color={colors.primary}>
+                            {review.vendor?.name ?? 'Vendor'} replied
+                          </Txt>
+                        </Row>
+                        <Txt size="xs" color={colors.text2} style={{ lineHeight: 18 }}>{review.vendor_reply}</Txt>
+                      </View>
+                    ) : null}
                   </Card>
                 );
               })

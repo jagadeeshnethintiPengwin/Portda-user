@@ -14,6 +14,7 @@ import {
 } from '@ui';
 import { colors, radius } from '@theme';
 import { qs } from './shared';
+import { formatServiceDateTime } from '../../utils/format';
 import { requestsApi } from '../../api';
 import type { ServiceRequest } from '../../api';
 
@@ -202,7 +203,7 @@ export const MyRequestsScreen: React.FC = () => {
 
                   {req.service_date ? (
                     <Txt size="xs" color={colors.text2} style={{ marginTop: 6 }}>
-                      ETA {req.service_date}{req.service_time ? ` · ${req.service_time}` : ''}
+                      ETA {formatServiceDateTime(req.service_date, req.service_time)}
                     </Txt>
                   ) : null}
 
@@ -212,7 +213,7 @@ export const MyRequestsScreen: React.FC = () => {
                         <Txt size="xs" color={colors.text2}>Quotes received</Txt>{' '}
                         <Txt size="xs" weight="semi" color={colors.primary}>{count} new</Txt>
                       </Txt>
-                      <Btn title="View Quotes" sm onPress={() => nav.navigate('QuotationsList', { requestId: String(req.id) })} />
+                      <Btn title="View Quotes" sm onPress={() => nav.navigate('RequestDetails', { requestId: String(req.id) })} />
                     </View>
                   ) : null}
                 </Card>

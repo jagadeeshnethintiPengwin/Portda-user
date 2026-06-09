@@ -5,7 +5,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Screen, ScreenBody, Topbar, BottomCta, Btn, Card, Row, RowBetween, Txt, Chip, ImgPh, Icon } from '@ui';
 import { colors } from '@theme';
 import { IconBtnBox, Stars, qs } from './shared';
-import { vendorsApi, reviewsApi, chatApi, ApiError } from '../../api';
+import { vendorsApi, vendorVerified, vendorBio, reviewsApi, chatApi, ApiError } from '../../api';
 import type { VendorProfile, Review } from '../../api';
 import type { RootStackParamList } from '@navigation/types';
 
@@ -102,11 +102,11 @@ export const VendorProfileScreen: React.FC<Props> = ({ route }) => {
             <ImgPh label={initials(name)} height={60} rounded={14} style={{ width: 60 }} />
             <View style={{ flex: 1 }}>
               <Txt size="md" weight="bold">{name}</Txt>
-              {vendor?.description ? (
-                <Txt size="xs" color={colors.text2} style={{ marginTop: 4 }}>{vendor.description}</Txt>
+              {vendorBio(vendor) ? (
+                <Txt size="xs" color={colors.text2} style={{ marginTop: 4 }}>{vendorBio(vendor)}</Txt>
               ) : null}
               <Row gap={6} style={{ marginTop: 8, flexWrap: 'wrap' }}>
-                {vendor?.is_verified ? <Chip label="✓ Verified" variant="success" /> : null}
+                {vendorVerified(vendor) ? <Chip label="✓ Verified" variant="success" /> : null}
                 {vendor?.is_premium ? <Chip label="★ Premium" variant="primary" /> : null}
               </Row>
             </View>

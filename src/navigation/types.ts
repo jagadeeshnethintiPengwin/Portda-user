@@ -80,7 +80,7 @@ export type RootStackParamList = {
 
   // ── Reviews ──────────────────────────────────────────────────
   RateVendor: { vendorId: string; orderId: string };
-  WriteReview: { vendorId: string; orderId: string; rating: number };
+  WriteReview: { vendorId: string; orderId: string; rating: number; tags?: string[]; vendorName?: string };
   ReviewsList: { vendorId: string };
 
   // ── Service request flow ─────────────────────────────────────
@@ -123,6 +123,7 @@ export type RootStackParamList = {
   // ── Profile ──────────────────────────────────────────────────
   Profile: undefined;
   EditProfile: undefined;
+  Kyc: undefined;
   ChangeContact: { field: 'phone' | 'email' };
   ChangePassword: undefined;
   HelpFaq: undefined;

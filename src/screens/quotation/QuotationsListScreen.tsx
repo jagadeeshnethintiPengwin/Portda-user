@@ -87,7 +87,7 @@ export const QuotationsListScreen: React.FC<Props> = ({ route }) => {
   const sorted = React.useMemo(() => {
     const active = quotations.filter(q => q.status === 'submitted');
     if (tab === 1) return [...active].sort((a, b) => a.amount - b.amount);
-    if (tab === 2) return [...active].sort((a, b) => (b.vendor?.rating ?? 0) - (a.vendor?.rating ?? 0));
+    if (tab === 2) return [...active].sort((a, b) => (Number(b.vendor?.rating) || 0) - (Number(a.vendor?.rating) || 0));
     return active;
   }, [quotations, tab]);
 
@@ -107,6 +107,8 @@ export const QuotationsListScreen: React.FC<Props> = ({ route }) => {
         ) : (
           sorted.map(q => {
             const isBest = q.amount === lowestAmount;
+            // rating can arrive as a string ("4.90") — coerce before math/format.
+            const rating = q.vendor?.rating != null && !isNaN(Number(q.vendor.rating)) ? Number(q.vendor.rating) : null;
             return (
               <Card key={q.id} style={[{ marginBottom: 10 }, isBest && { borderWidth: 1.5, borderColor: colors.success }]}>
                 <RowBetween style={{ marginBottom: 8 }}>
@@ -114,10 +116,10 @@ export const QuotationsListScreen: React.FC<Props> = ({ route }) => {
                     <ImgPh label={initials(q.vendor?.company_name ?? 'V')} tone="primary" height={40} rounded={10} style={{ width: 40 }} />
                     <View>
                       <Txt size="sm" weight="semi">{q.vendor?.company_name ?? 'Vendor'}</Txt>
-                      {q.vendor?.rating ? (
+                      {rating !== null ? (
                         <Row gap={6}>
-                          <Stars filled={Math.round(q.vendor.rating)} />
-                          <Txt size="xs" color={colors.text2}>{q.vendor.rating.toFixed(1)}</Txt>
+                          <Stars filled={Math.round(rating)} />
+                          <Txt size="xs" color={colors.text2}>{rating.toFixed(1)}</Txt>
                         </Row>
                       ) : null}
                     </View>

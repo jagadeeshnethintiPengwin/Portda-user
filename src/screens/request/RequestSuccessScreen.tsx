@@ -43,8 +43,17 @@ export const RequestSuccessScreen: React.FC<Props> = ({ route }) => {
         </Card>
       </View>
       <BottomCta>
-        <Btn title="Track My Request" onPress={() => nav.navigate('RequestDetails', { requestId })} />
-        <Btn title="Back to Dashboard" variant="ghost" onPress={() => nav.navigate('Main')} />
+        <Btn
+          title="Track My Request"
+          onPress={() => nav.reset({
+            index: 1,
+            routes: [
+              { name: 'Main', params: { screen: 'Requests' } },
+              { name: 'RequestDetails', params: { requestId } },
+            ],
+          })}
+        />
+        <Btn title="Back to Dashboard" variant="ghost" onPress={() => nav.navigate('Main', { screen: 'Home' })} />
       </BottomCta>
     </Screen>
   );

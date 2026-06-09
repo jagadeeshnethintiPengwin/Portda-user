@@ -64,7 +64,15 @@ export const RequestPreviewScreen: React.FC = () => {
         urgency: draft.urgency,
       });
       resetDraft();
-      nav.navigate('RequestSuccess', { requestId: String(request.id) });
+      // Clear the whole wizard from the stack so "back" from the success screen
+      // lands on Home — not on the spent, now-empty draft steps.
+      nav.reset({
+        index: 1,
+        routes: [
+          { name: 'Main', params: { screen: 'Home' } },
+          { name: 'RequestSuccess', params: { requestId: String(request.id) } },
+        ],
+      });
     } catch (err) {
       setSubmitting(false);
       const msg = err instanceof ApiError ? err.message : 'Failed to submit request.';

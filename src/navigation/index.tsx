@@ -79,6 +79,7 @@ import {
 import {
   ProfileScreen,
   EditProfileScreen,
+  KycScreen,
   ChangeContactScreen,
   ChangePasswordScreen,
   HelpFaqScreen,
@@ -182,6 +183,7 @@ export const RootNavigator: React.FC = () => (
     {/* Profile */}
     <RootStack.Screen name="Profile" component={ProfileScreen} />
     <RootStack.Screen name="EditProfile" component={EditProfileScreen} />
+    <RootStack.Screen name="Kyc" component={KycScreen} />
     <RootStack.Screen name="ChangeContact" component={ChangeContactScreen} />
     <RootStack.Screen name="ChangePassword" component={ChangePasswordScreen} />
     <RootStack.Screen name="HelpFaq" component={HelpFaqScreen} />

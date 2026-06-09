@@ -151,9 +151,9 @@ export const MyOrdersScreen: React.FC = () => {
                   <Row gap={8} style={{ marginTop: 12 }}>
                     <Btn
                       title={chatOpeningId === o.id ? 'Opening…' : 'Chat'}
-                      variant="outline"
+                      variant="ghost"
                       sm
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, borderWidth: 1.5, borderColor: colors.border }}
                       disabled={chatOpeningId === o.id}
                       onPress={() => openChat(o)}
                     />

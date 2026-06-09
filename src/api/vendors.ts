@@ -1,6 +1,20 @@
 import { api } from './client';
 import type { VendorProfile } from './types';
 
+/**
+ * Whether a vendor is verified. The API exposes `verification_status` ("verified"),
+ * not a boolean `is_verified` — older payloads may carry either, so honour both.
+ */
+export function vendorVerified(v?: Partial<VendorProfile> | null): boolean {
+  if (!v) return false;
+  return v.is_verified === true || v.verification_status === 'verified';
+}
+
+/** Vendor blurb — the API field is `bio`; fall back to `description`. */
+export function vendorBio(v?: Partial<VendorProfile> | null): string | null {
+  return v?.bio ?? v?.description ?? null;
+}
+
 export interface VendorFilters {
   port_id?: number;
   category_id?: number;

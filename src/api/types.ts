@@ -72,12 +72,21 @@ export interface VendorProfile {
   id: number;
   user_id: number;
   company_name: string;
-  rating: number | null;
+  // The API returns rating as a STRING ("4.90"). Coerce with Number() before formatting.
+  rating: number | string | null;
+  rating_count?: number;
   jobs_completed: number;
   is_premium: boolean;
-  is_verified: boolean;
-  description: string | null;
-  avatar: string | null;
+  // The API exposes `verification_status` ("verified"|…), not a boolean `is_verified`.
+  verification_status?: string | null;
+  is_verified?: boolean;
+  // The API field is `bio`; `description` is kept for older payloads. Use vendorBio().
+  bio?: string | null;
+  description?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  avatar?: string | null;
   user?: User;
 }
 
@@ -105,19 +114,82 @@ export interface ServiceRequest {
   quotations?: Quotation[];
 }
 
+export interface QuotationDocument {
+  name?: string | null;
+  url?: string | null;
+  path?: string | null;
+  size?: string | number | null;
+  pages?: number | null;
+  created_at?: string | null;
+}
+
 export interface Quotation {
   id: number;
   service_request_id: number;
   vendor_profile_id: number;
   amount: number;
+  currency?: string | null;
   notes: string | null;
+  line_items?: { label: string; amount: number | string }[] | null;
   valid_until: string | null;
   status: 'submitted' | 'accepted' | 'rejected' | 'withdrawn' | 'expired';
   submitted_at: string;
   accepted_at: string | null;
   vendor?: VendorProfile;
   service_request?: ServiceRequest;
+  // Quotation document — the live API exposes a relative `document_path` (+ name/size)
+  // for the vendor's file, and `admin_document_path` for an official PORTDA-issued doc.
+  document_path?: string | null;
+  document_name?: string | null;
+  document_size?: string | number | null;
+  document_uploaded_at?: string | null;
+  admin_document_path?: string | null;
+  admin_document_name?: string | null;
+  admin_document_size?: string | number | null;
+  admin_document_uploaded_at?: string | null;
+  // Older/alternate shapes — still resolved defensively in the UI.
+  documents?: QuotationDocument[] | null;
+  document_url?: string | null;
+  attachment_url?: string | null;
+  attachment_path?: string | null;
 }
+
+/** A staged payment within an order (APP_WORKFLOWS.md A.0 / B7). */
+export type MilestoneStatus =
+  | 'pending' | 'funded' | 'in_progress' | 'submitted' | 'approved' | 'released' | 'disputed' | 'refunded';
+
+export interface Milestone {
+  id: number;
+  sequence: number;
+  title: string;
+  description: string | null;
+  amount: number | string;
+  currency: string | null;
+  status: MilestoneStatus;
+  vendor_notes: string | null;
+  buyer_feedback: string | null;
+  submitted_at: string | null;
+  approved_at: string | null;
+  released_at: string | null;
+}
+
+/** Escrow hold backing an order (APP_WORKFLOWS.md A.0). */
+export type EscrowStatus = 'awaiting_funding' | 'partial' | 'held' | 'released' | 'refunded';
+
+export interface EscrowHold {
+  id: number;
+  reference: string;
+  status: EscrowStatus;
+  /** `upfront` = whole order funded at once; `per_milestone` = staged. */
+  funding_mode: 'upfront' | 'per_milestone';
+  amount_held: number | string;
+  amount_released: number | string;
+  amount_refunded: number | string;
+  currency: string | null;
+}
+
+/** Vendor-initiated abort lifecycle (APP_WORKFLOWS.md A.2 / B7). */
+export type AbortStatus = null | 'requested' | 'escalated' | 'aborted' | 'rejected';
 
 export interface Order {
   id: number;
@@ -142,6 +214,13 @@ export interface Order {
   invoice?: Invoice | null;
   review?: Review | null;
   events?: OrderEvent[];
+  // Milestone / escrow (A.0) — present once the backend ships Appendix A; UI degrades when absent.
+  milestones?: Milestone[] | null;
+  escrow_hold?: EscrowHold | null;
+  // Abort lifecycle (A.2).
+  abort_status?: AbortStatus;
+  abort_reason?: string | null;
+  abort_requested_at?: string | null;
 }
 
 export interface Payment {
@@ -232,22 +311,35 @@ export interface Dashboard {
 export interface Review {
   id: number;
   order_id: number;
-  vendor_profile_id: number;
+  // The API field is `vendor_id` (the vendor profile id); keep the old name optional.
+  vendor_id?: number;
+  vendor_profile_id?: number;
   buyer_id: number;
   rating: number;
   title: string | null;
   body: string | null;
   tags: string[];
+  status?: string;
+  // Vendor's public reply to the review.
+  vendor_reply?: string | null;
+  replied_at?: string | null;
   created_at: string;
+  updated_at?: string;
   buyer?: User;
+  vendor?: { id: number; name: string; avatar?: string | null; avatar_url?: string | null };
+  order?: Order;
 }
 
 export interface KycDocument {
   id: number;
-  buyer_id: number;
+  user_id?: number;
+  buyer_id?: number;
   doc_type: string;
   doc_number: string | null;
-  file_url: string | null;
+  // The API returns a relative `file_path` (+ `original_name`); `file_url` may be absent.
+  file_path?: string | null;
+  file_url?: string | null;
+  original_name?: string | null;
   status: 'pending' | 'approved' | 'rejected';
   reject_reason: string | null;
   created_at: string;

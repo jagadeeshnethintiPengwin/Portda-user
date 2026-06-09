@@ -12,7 +12,7 @@ import type { RouteProp } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { Screen, ScreenBody, Topbar, Btn, Row, RowBetween, Txt, SearchBar } from '@ui';
 import { colors, font, fontSize, gradients, radius, shadow } from '@theme';
-import { vendorsApi, catalogApi } from '../../api';
+import { vendorsApi, vendorVerified, vendorBio, catalogApi } from '../../api';
 import type { VendorProfile, Category } from '../../api';
 import type { MainTabParamList } from '@navigation/types';
 
@@ -198,16 +198,16 @@ export const FeaturedVendorsScreen: React.FC = () => {
                         <View style={[styles.vBadge, { backgroundColor: colors.primaryLight }]}>
                           <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary }}>★ Pro</Text>
                         </View>
-                      ) : v.is_verified ? (
+                      ) : vendorVerified(v) ? (
                         <View style={[styles.vBadge, { backgroundColor: colors.successLight }]}>
                           <Text style={{ fontSize: 11, fontWeight: '700', color: colors.success }}>✓ Verified</Text>
                         </View>
                       ) : null}
                     </RowBetween>
 
-                    {v.description ? (
+                    {vendorBio(v) ? (
                       <Txt size="base" color={colors.text2} style={{ marginTop: 4 }} numberOfLines={1}>
-                        {v.description}
+                        {vendorBio(v)}
                       </Txt>
                     ) : null}
 

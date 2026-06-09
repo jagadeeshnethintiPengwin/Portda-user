@@ -47,8 +47,17 @@ export const profileApi = {
 
   kycList: () => api<KycDocument[]>('/kyc'),
 
-  kycStatus: () =>
-    api<{ counts: { pending: number; approved: number } }>('/kyc/status'),
+  // The API returns `counts` as {} / [] when empty and a partial object
+  // ({pending} only) otherwise, plus a `verification_status`. Normalise to a
+  // stable shape so screens never hit undefined.
+  kycStatus: async (): Promise<{ counts: { pending: number; approved: number }; verification_status: string | null }> => {
+    const r = await api<any>('/kyc/status');
+    const c = r?.counts;
+    const counts = c && !Array.isArray(c)
+      ? { pending: Number(c.pending) || 0, approved: Number(c.approved) || 0 }
+      : { pending: 0, approved: 0 };
+    return { counts, verification_status: r?.verification_status ?? null };
+  },
 
   kycUpload: (data: {
     doc_type: string;

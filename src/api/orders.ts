@@ -34,4 +34,19 @@ export const ordersApi = {
       `/orders/${id}/reschedule`,
       { method: 'POST', body: JSON.stringify({ scheduled_at }) },
     ),
+
+  /**
+   * Respond to a vendor's abort request (APP_WORKFLOWS.md A.2 / B7).
+   * `accept` → order cancelled + unreleased escrow refunded; `decline` → escalated to admin.
+   * Appendix-A endpoint — may 404 until shipped; callers catch ApiError.
+   */
+  abortRespond: (
+    id: number | string,
+    decision: 'accept' | 'decline',
+    note?: string,
+  ) =>
+    api<Order>(
+      `/orders/${id}/abort/respond`,
+      { method: 'POST', body: JSON.stringify({ decision, ...(note ? { note } : {}) }) },
+    ),
 };

@@ -74,7 +74,7 @@ export const ProfileScreen: React.FC = () => {
         <Txt size="md" weight="semi" style={{ marginTop: 16, marginBottom: 8 }}>Account</Txt>
         <ListGroup rows={[
           { iconName: 'edit',      label: 'Edit Profile',    bg: colors.primaryLight, fg: colors.primary, onPress: () => nav.navigate('EditProfile') },
-          { iconName: 'file-text', label: 'KYC / Documents', bg: colors.successLight, fg: colors.success, right: kycChip ? <Chip label={kycChip.label} variant={kycChip.variant} /> : undefined },
+          { iconName: 'file-text', label: 'KYC / Documents', bg: colors.successLight, fg: colors.success, right: kycChip ? <Chip label={kycChip.label} variant={kycChip.variant} /> : undefined, onPress: () => nav.navigate('Kyc') },
           { iconName: 'card',      label: 'Payment Methods', bg: colors.accentLight,  fg: colors.accent },
         ]} />
 

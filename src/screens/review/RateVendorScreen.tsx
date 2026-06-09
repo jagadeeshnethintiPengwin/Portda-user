@@ -113,7 +113,7 @@ export const RateVendorScreen: React.FC<Props> = ({ route }) => {
         <Btn
           title="Continue to Write Review →"
           disabled={rating === 0}
-          onPress={() => nav.navigate('WriteReview', { vendorId, orderId, rating })}
+          onPress={() => nav.navigate('WriteReview', { vendorId, orderId, rating, tags: selectedTags, vendorName })}
         />
       </BottomCta>
     </Screen>

@@ -12,6 +12,7 @@ import { dashboardApi, catalogApi, profileApi } from '../../api';
 import type { Dashboard, HeroSlide, Port } from '../../api';
 import { getSelectedPort, setSelectedPort } from '../../storage';
 import { useAuth } from '../../context/AuthContext';
+import { useRequestDraft } from '../../context/RequestDraftContext';
 import { PORT_SERVICES } from '../../data/portServices';
 import type { PortServiceCategory } from '../../data/portServices';
 
@@ -288,6 +289,13 @@ const HeroCarousel: React.FC<{ slides: HeroSlide[] }> = ({ slides }) => {
 export const HomeDashboardScreen: React.FC = () => {
   const nav = useNavigation<any>();
   const { user } = useAuth();
+  const { resetDraft } = useRequestDraft();
+  // Every Port Services tile starts a fresh request and lands on the service-type
+  // picker — uniform for all tiles (no per-tile category-match branching).
+  const startRequest = React.useCallback(() => {
+    resetDraft();
+    nav.navigate('SelectServiceType');
+  }, [resetDraft, nav]);
   const [data, setData] = React.useState<Dashboard | null>(null);
   const [slides, setSlides] = React.useState<HeroSlide[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -381,14 +389,14 @@ export const HomeDashboardScreen: React.FC = () => {
 
         <RowBetween style={{ marginTop: 16, marginBottom: 8 }}>
           <Txt size="md" weight="semi">Port Services</Txt>
-          <Txt size="sm" color={colors.primary} weight="semi" onPress={() => nav.navigate('Categories')}>View all</Txt>
+          <Txt size="sm" color={colors.primary} weight="semi" onPress={startRequest}>View all</Txt>
         </RowBetween>
         <View style={styles.grid3}>
           {PORT_SERVICES.map(s => (
             <CatTileView
               key={s.id}
               tile={s}
-              onPress={() => nav.navigate('CreateRequest', { serviceId: s.id, serviceName: s.fullName })}
+              onPress={startRequest}
             />
           ))}
         </View>
@@ -407,7 +415,7 @@ export const HomeDashboardScreen: React.FC = () => {
             <View style={{ padding: 12 }}>
               <RowBetween>
                 <Txt size="md" weight="semi">{order.vendor?.company_name ?? 'Port Vendor'}</Txt>
-                <Chip label={`⭐ ${order.vendor?.rating?.toFixed(1) ?? '—'}`} variant="success" />
+                <Chip label={`⭐ ${order.vendor?.rating != null && !isNaN(Number(order.vendor.rating)) ? Number(order.vendor.rating).toFixed(1) : '—'}`} variant="success" />
               </RowBetween>
               <Txt size="sm" color={colors.text2} style={{ marginTop: 4 }}>{order.service_request?.category?.name ?? 'Port Service'}</Txt>
             </View>
